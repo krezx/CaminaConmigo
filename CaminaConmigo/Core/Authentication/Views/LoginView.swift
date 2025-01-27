@@ -9,7 +9,10 @@
 import SwiftUI
 
 struct LoginView: View {
-    @State private var mostrarLoginGoogle = false
+    @EnvironmentObject var authViewModel: AuthenticationViewModel
+    @State private var isLoading = false
+    @State private var showError = false
+    @State private var errorMessage = ""
     
     var body: some View {
         ZStack {
@@ -34,10 +37,9 @@ struct LoginView: View {
                             .foregroundColor(Color.black)
                             .padding(.bottom, 20)
                             
-                        // Botón de Inicio de Sesión con Google
-                        Button(action: {
-                            mostrarLoginGoogle = true
-                        }) {
+                        Button {
+                            handleGoogleSignIn()
+                        } label: {
                             HStack {
                                 Image("logo_google")
                                     .resizable()
@@ -52,10 +54,11 @@ struct LoginView: View {
                             .background(Color.init(uiColor: UIColor(red: 1, green: 124/255, blue: 31/255, alpha: 1.0)))
                             .cornerRadius(20)
                         }
+                        .disabled(isLoading)
                         
                         // Botón de Inicio como Invitado
                         Button(action: {
-                            // Manejar inicio de sesión como invitado
+                            authViewModel.signInAsGuest()
                         }) {
                             HStack {
                                 Spacer()
@@ -64,7 +67,7 @@ struct LoginView: View {
                                     .foregroundColor(.gray)
                                 Spacer()
                             }
-                            .padding(.horizontal, 10) // Añadir algo de relleno horizontal para que el texto no quede pegado al borde
+                            .padding(.horizontal, 10)
                         }
                         .frame(width: 231, height: 35) // Establecer el tamaño específico del botón
                         .background(Color.white)
@@ -78,7 +81,8 @@ struct LoginView: View {
                     .padding(.bottom, 50)
                 }
                 .frame(width: 332, height: 470)
-                .background(RoundedRectangle(cornerRadius: 30).stroke(Color.init(uiColor: UIColor(red: 239/255, green: 96/255, blue: 152/255, alpha: 1.0)), lineWidth: 2))
+                .background(RoundedRectangle(cornerRadius: 30)
+                    .stroke(Color.init(uiColor: UIColor(red: 239/255, green: 96/255, blue: 152/255, alpha: 1.0)), lineWidth: 2))
                 .background(Color.white)
                 .cornerRadius(30)
             }
@@ -86,6 +90,31 @@ struct LoginView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
         .edgesIgnoringSafeArea(.all)
+        .overlay {
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .tint(.pink)
+            }
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
+    }
+    
+    func handleGoogleSignIn() {
+        isLoading = true
+        Task {
+            do {
+                try await authViewModel.signInWithGoogle()
+            } catch {
+                errorMessage = error.localizedDescription
+                showError = true
+            }
+            isLoading = false
+        }
     }
 }
 

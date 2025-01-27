@@ -8,15 +8,34 @@
 
 /* Begin PBXBuildFile section */
 		00CFEB392D47F55700A50B2E /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEB382D47F55700A50B2E /* FirebaseCore */; };
+		00CFEC062D481B3700A50B2E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC052D481B3700A50B2E /* FirebaseAuth */; };
+		00CFEC092D481D8900A50B2E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC082D481D8900A50B2E /* GoogleSignIn */; };
+		00CFEC0B2D481D8900A50B2E /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC0A2D481D8900A50B2E /* GoogleSignInSwift */; };
+		00CFEC152D48294000A50B2E /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC142D48294000A50B2E /* FirebaseDatabase */; };
+		00CFEC172D48294000A50B2E /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC162D48294000A50B2E /* FirebaseFirestore */; };
+		00CFEC192D48294000A50B2E /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC182D48294000A50B2E /* FirebaseStorage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		00CFEB1C2D47F03B00A50B2E /* CaminaConmigo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaminaConmigo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		00CFEC0F2D481FE300A50B2E /* Exceptions for "CaminaConmigo" folder in "CaminaConmigo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 00CFEB1B2D47F03B00A50B2E /* CaminaConmigo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		00CFEB1E2D47F03B00A50B2E /* CaminaConmigo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				00CFEC0F2D481FE300A50B2E /* Exceptions for "CaminaConmigo" folder in "CaminaConmigo" target */,
+			);
 			path = CaminaConmigo;
 			sourceTree = "<group>";
 		};
@@ -27,7 +46,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				00CFEC152D48294000A50B2E /* FirebaseDatabase in Frameworks */,
 				00CFEB392D47F55700A50B2E /* FirebaseCore in Frameworks */,
+				00CFEC062D481B3700A50B2E /* FirebaseAuth in Frameworks */,
+				00CFEC092D481D8900A50B2E /* GoogleSignIn in Frameworks */,
+				00CFEC192D48294000A50B2E /* FirebaseStorage in Frameworks */,
+				00CFEC0B2D481D8900A50B2E /* GoogleSignInSwift in Frameworks */,
+				00CFEC172D48294000A50B2E /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +96,12 @@
 			name = CaminaConmigo;
 			packageProductDependencies = (
 				00CFEB382D47F55700A50B2E /* FirebaseCore */,
+				00CFEC052D481B3700A50B2E /* FirebaseAuth */,
+				00CFEC082D481D8900A50B2E /* GoogleSignIn */,
+				00CFEC0A2D481D8900A50B2E /* GoogleSignInSwift */,
+				00CFEC142D48294000A50B2E /* FirebaseDatabase */,
+				00CFEC162D48294000A50B2E /* FirebaseFirestore */,
+				00CFEC182D48294000A50B2E /* FirebaseStorage */,
 			);
 			productName = CaminaConmigo;
 			productReference = 00CFEB1C2D47F03B00A50B2E /* CaminaConmigo.app */;
@@ -102,6 +133,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				00CFEC072D481D8900A50B2E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 00CFEB1D2D47F03B00A50B2E /* Products */;
@@ -186,7 +218,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -243,7 +275,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -264,16 +296,20 @@
 				DEVELOPMENT_TEAM = 42R3J6P8VZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CaminaConmigo/Info.plist;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Permitir acceso";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.CaminaConmigo.CaminaConmigo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -293,16 +329,20 @@
 				DEVELOPMENT_TEAM = 42R3J6P8VZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CaminaConmigo/Info.plist;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Permitir acceso";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.CaminaConmigo.CaminaConmigo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -343,6 +383,14 @@
 				minimumVersion = 11.7.0;
 			};
 		};
+		00CFEC072D481D8900A50B2E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -350,6 +398,36 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
+		};
+		00CFEC052D481B3700A50B2E /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		00CFEC082D481D8900A50B2E /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEC072D481D8900A50B2E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		00CFEC0A2D481D8900A50B2E /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEC072D481D8900A50B2E /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		00CFEC142D48294000A50B2E /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+		00CFEC162D48294000A50B2E /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		00CFEC182D48294000A50B2E /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

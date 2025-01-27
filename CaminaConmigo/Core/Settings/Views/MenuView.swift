@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MenuView: View {
     @EnvironmentObject var navigationState: TabNavigationState
+    @EnvironmentObject var authViewModel: AuthenticationViewModel
     @State private var navigateToProfile = false
     @State private var navigateToChats = false
     @State private var navigateToEmergencyContacts = false
@@ -16,6 +17,7 @@ struct MenuView: View {
     @State private var navigateToInviteFriends = false
     @State private var navigateToSuggestions = false
     @State private var navigateToSettings = false
+    @State private var showGuestAlert = false
 
     var body: some View {
         NavigationStack {
@@ -24,10 +26,19 @@ struct MenuView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     SectionHeader(title: "Perfil")
                     
-                    NavigationLink {
-                        ProfileView()
-                    } label: {
-                        MenuItem(icon: "person.circle", title: "Mi perfil")
+                    if authViewModel.isGuestMode {
+                        Button {
+                            // Mostrar alerta para iniciar sesión
+                            showGuestAlert = true
+                        } label: {
+                            MenuItem(icon: "person.circle", title: "Mi perfil")
+                        }
+                    } else {
+                        NavigationLink {
+                            ProfileView()
+                        } label: {
+                            MenuItem(icon: "person.circle", title: "Mi perfil")
+                        }
                     }
                     
                     Button {
@@ -93,13 +104,14 @@ struct MenuView: View {
                 // Footer
                 VStack {
                     Button(action: {
-                        // Acción de cerrar sesión
+                        authViewModel.signOut()
                     }) {
-                        Text("Cerrar sesión")
+                        Text(authViewModel.isGuestMode ? "Iniciar sesión" : "Cerrar sesión")
                             .foregroundColor(.black)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(RoundedRectangle(cornerRadius: 30).stroke(Color.init(uiColor: UIColor(red: 239/255, green: 96/255, blue: 152/255, alpha: 1.0)), lineWidth: 1))
+                            .background(RoundedRectangle(cornerRadius: 30)
+                                .stroke(Color.init(uiColor: UIColor(red: 239/255, green: 96/255, blue: 152/255, alpha: 1.0)), lineWidth: 1))
                             .padding(.horizontal, 110)
                     }
                     
@@ -118,6 +130,14 @@ struct MenuView: View {
             .background(Color(UIColor.systemBackground))
             .navigationBarBackButtonHidden(true)
             .tint(.black)
+            .alert("Iniciar sesión", isPresented: $showGuestAlert) {
+                Button("Cancelar", role: .cancel) {}
+                Button("Iniciar sesión") {
+                    authViewModel.signOut() // Esto llevará al usuario a la pantalla de login
+                }
+            } message: {
+                Text("Debes iniciar sesión para acceder a tu perfil")
+            }
         }
     }
 }
