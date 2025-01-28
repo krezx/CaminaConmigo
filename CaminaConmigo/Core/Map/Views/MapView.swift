@@ -1,3 +1,11 @@
+//
+//  MapView.swift
+//  CaminaConmigo
+//
+//  Created by a on 28-01-25.
+//
+
+
 import SwiftUI
 
 /// Vista principal del mapa donde el usuario puede interactuar con el mapa, buscar ubicaciones,

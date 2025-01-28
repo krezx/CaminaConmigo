@@ -9,37 +9,57 @@ import SwiftUI
 import FirebaseCore
 import GoogleSignIn
 
+/// Clase AppDelegate que conforma el protocolo UIApplicationDelegate.
+/// Maneja los eventos de la aplicación, como su inicio y la gestión de URL.
 class AppDelegate: NSObject, UIApplicationDelegate {
-  func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-    FirebaseApp.configure()
-
-    return true
-  }
+    
+    /// Método que se llama al terminar de lanzar la aplicación.
+    /// Configura Firebase al iniciar la aplicación.
+    ///
+    /// - Parameters:
+    ///   - application: La aplicación que se está lanzando.
+    ///   - launchOptions: Opciones de lanzamiento de la aplicación.
+    /// - Returns: Un valor booleano que indica si la inicialización fue exitosa.
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        FirebaseApp.configure() // Configura Firebase al iniciar la aplicación.
+        return true // Indica que la aplicación se ha lanzado correctamente.
+    }
   
-  func application(_ app: UIApplication,
-                  open url: URL,
-                  options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-    return GIDSignIn.sharedInstance.handle(url)
-  }
+    /// Método que se llama cuando la aplicación recibe una URL.
+    /// Permite que Google Sign-In maneje el retorno de la autenticación.
+    ///
+    /// - Parameters:
+    ///   - app: La aplicación que recibe la URL.
+    ///   - url: La URL que se recibió.
+    ///   - options: Opciones relacionadas con la apertura de la URL.
+    /// - Returns: Un valor booleano que indica si se manejó la URL correctamente.
+    func application(_ app: UIApplication,
+                    open url: URL,
+                    options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        return GIDSignIn.sharedInstance.handle(url) // Maneja la URL con Google Sign-In.
+    }
 }
 
+/// Estructura principal de la aplicación que conforma el protocolo App.
 @main
 struct CaminaConmigoApp: App {
-    @StateObject var authViewModel = AuthenticationViewModel()
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject var authViewModel = AuthenticationViewModel() // Inicializa el ViewModel de autenticación.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate // Asocia el AppDelegate con la aplicación.
     
+    /// Cuerpo principal de la aplicación que define su escena.
     var body: some Scene {
-        WindowGroup {
+        WindowGroup { // Grupo de ventanas para la interfaz de usuario.
             Group {
+                // Verifica si hay una sesión de usuario activa o si el modo invitado está habilitado.
                 if authViewModel.userSession != nil || authViewModel.isGuestMode {
-                    TabViewCustom()
+                    TabViewCustom() // Muestra la vista principal de la aplicación.
                 } else {
-                    LoginView()
+                    LoginView() // Muestra la vista de inicio de sesión.
                 }
             }
-            .environmentObject(authViewModel)
-            .preferredColorScheme(.light)
+            .environmentObject(authViewModel) // Proporciona el ViewModel de autenticación al entorno.
+            .preferredColorScheme(.light) // Establece el esquema de color preferido a claro.
         }
     }
 }
