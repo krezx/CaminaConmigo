@@ -1,10 +1,3 @@
-//
-//  MapaView.swift
-//  CaminaConmigo
-//
-//  Created by a on 20-01-25.
-//
-
 import SwiftUI
 import MapKit
 

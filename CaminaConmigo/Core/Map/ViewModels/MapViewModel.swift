@@ -1,10 +1,12 @@
 import SwiftUI
 
+/// ViewModel para gestionar la lógica de la vista del mapa y los reportes.
 class MapViewModel: ObservableObject {
-    @Published var showReportSheet = false
-    @Published var showReportDetailSheet = false
-    @Published var currentReport: Report?
-    
+    @Published var showReportSheet = false  // Controla la visibilidad de la hoja de reporte.
+    @Published var showReportDetailSheet = false  // Controla la visibilidad de la hoja de detalles del reporte.
+    @Published var currentReport: Report?  // El reporte actualmente seleccionado para ser procesado.
+
+    // Lista de tipos de reportes disponibles para el usuario.
     let reportTypes = [
         ReportType(title: "Agresión Verbal", imageName: "agresion_verbal"),
         ReportType(title: "Agresión Sexual", imageName: "agresion_sexual"),
@@ -21,17 +23,20 @@ class MapViewModel: ObservableObject {
         ReportType(title: "Vegetación Abundante", imageName: "vegetacion_abundante")
     ]
     
+    /// Maneja el evento cuando un usuario selecciona un tipo de reporte.
+    /// - Parameter type: El tipo de reporte seleccionado.
     func handleReport(type: ReportType) {
         currentReport = Report(type: type, description: "", location: "")
-        showReportSheet = false
-        showReportDetailSheet = true
+        showReportSheet = false  // Cierra la hoja de selección de reporte.
+        showReportDetailSheet = true  // Muestra la hoja de detalles del reporte.
     }
     
+    /// Envía el reporte al servidor o sistema de backend.
     func submitReport() {
         guard let report = currentReport else { return }
-        // Aquí irá la lógica para enviar el reporte al servidor
+        // Aquí irá la lógica para enviar el reporte al servidor.
         print("Enviando reporte: \(report)")
-        showReportDetailSheet = false
-        currentReport = nil
+        showReportDetailSheet = false  // Cierra la hoja de detalles del reporte después de enviarlo.
+        currentReport = nil  // Resetea el reporte actual después de enviarlo.
     }
-} 
+}
