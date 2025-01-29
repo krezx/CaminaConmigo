@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import MapKit
 
 /// Vista para completar los detalles de un reporte, permitiendo al usuario agregar una descripción,
 /// tomar o seleccionar una foto, y elegir si quiere enviar el reporte de manera anónima o no.
@@ -17,6 +18,7 @@ struct ReportDetailView: View {
     @State private var isAnonymous: Bool = true  // Controla si el reporte se enviará de forma anónima.
     @State private var showImagePicker = false  // Controla si se debe mostrar el selector de imagen.
     @State private var selectedImage: UIImage?  // Imagen seleccionada para el reporte.
+    @State private var showMapPicker = false  // Controla si se debe mostrar el selector de mapa.
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -59,16 +61,22 @@ struct ReportDetailView: View {
             }
             .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))  // Fondo con borde redondeado.
             
-            // Información de la ubicación.
-            HStack {
-                Image(systemName: "location.fill")  // Icono de ubicación.
-                Text("Avenida Francisco de Aguirre...")  // Texto de la ubicación (puede ser dinámico).
-                    .foregroundColor(.gray)
+            // Botón para seleccionar una ubicación.
+            Button {
+                showMapPicker = true  // Muestra el selector de mapa al presionar.
+            } label: {
+                HStack {
+                    Image(systemName: "location.fill")  // Icono de ubicación.
+                    Text(viewModel.selectedLocation != nil ? "Ubicación seleccionada" : "Seleccionar ubicación")  // Texto del botón.
+                        .foregroundColor(.gray)
+                }
             }
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
-            .background(Color.gray.opacity(0.2))
-            .cornerRadius(8)
+            
+            // Toggle para elegir si el reporte es anónimo o no.
+            Toggle("Reportar anónimamente", isOn: $isAnonymous)
+                .tint(.purple)
+            
+            Spacer()
             
             // Botones para tomar o seleccionar una foto.
             HStack(spacing: 20) {
@@ -92,17 +100,11 @@ struct ReportDetailView: View {
                 Spacer()
             }
             
-            // Toggle para elegir si el reporte es anónimo o no.
-            Toggle("Reportar anónimamente", isOn: $isAnonymous)
-                .tint(.purple)
-            
-            Spacer()
-            
             // Botón para enviar el reporte.
             Button {
                 viewModel.currentReport?.description = description
                 viewModel.currentReport?.isAnonymous = isAnonymous
-                viewModel.submitReport()  // Llama al método del ViewModel para enviar el reporte.
+                viewModel.submitReport(image: selectedImage)  // Llama al método del ViewModel para enviar el reporte con la imagen seleccionada.
                 dismiss()  // Cierra la vista después de enviar el reporte.
             } label: {
                 Text("REPORTAR")
@@ -118,6 +120,9 @@ struct ReportDetailView: View {
         .background(Color.white)  // Fondo blanco para toda la vista.
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(image: $selectedImage)  // Muestra el selector de imágenes cuando está activo.
+        }
+        .sheet(isPresented: $showMapPicker) {
+            MapPickerView(coordinate: $viewModel.selectedLocation)  // Muestra el selector de mapa cuando está activo.
         }
     }
 }

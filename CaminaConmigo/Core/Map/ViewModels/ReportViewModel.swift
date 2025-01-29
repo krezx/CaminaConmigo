@@ -7,14 +7,18 @@
 
 import SwiftUI
 import FirebaseFirestore
+import FirebaseStorage
+import CoreLocation
 
 /// ViewModel para gestionar la lógica de los reportes.
 class ReportViewModel: ObservableObject {
     @Published var showReportSheet = false  // Controla la visibilidad de la hoja de reporte.
     @Published var showReportDetailSheet = false  // Controla la visibilidad de la hoja de detalles del reporte.
     @Published var currentReport: Report?  // El reporte actualmente seleccionado para ser procesado.
+    @Published var selectedLocation: CLLocationCoordinate2D?
 
     private let db = Firestore.firestore()
+    private let storage = Storage.storage()
 
     // Lista de tipos de reportes disponibles para el usuario.
     let reportTypes = [
@@ -36,13 +40,13 @@ class ReportViewModel: ObservableObject {
     /// Maneja el evento cuando un usuario selecciona un tipo de reporte.
     /// - Parameter type: El tipo de reporte seleccionado.
     func handleReport(type: ReportType) {
-        currentReport = Report(type: type, description: "", location: "")
+        currentReport = Report(type: type, description: "", location: "", isAnonymous: true)
         showReportSheet = false  // Cierra la hoja de selección de reporte.
         showReportDetailSheet = true  // Muestra la hoja de detalles del reporte.
     }
     
     /// Envía el reporte al servidor o sistema de backend.
-    func submitReport() {
+    func submitReport(image: UIImage?) {
         guard let report = currentReport else { return }
 
         let reportData: [String: Any] = [
@@ -50,18 +54,51 @@ class ReportViewModel: ObservableObject {
             "description": report.description,
             "location": report.location,
             "isAnonymous": report.isAnonymous,
-            "timestamp": Timestamp(date: Date())
+            "timestamp": Timestamp(date: Date()),
+            "latitude": selectedLocation?.latitude ?? 0,
+            "longitude": selectedLocation?.longitude ?? 0
         ]
 
-        db.collection("reportes").addDocument(data: reportData) { error in
+        if let image = image {
+            uploadImage(image) { url in
+                var data = reportData
+                data["imageUrl"] = url?.absoluteString ?? ""
+                self.saveReportData(data)
+            }
+        } else {
+            saveReportData(reportData)
+        }
+    }
+
+    private func uploadImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
+        let imageData = image.jpegData(compressionQuality: 0.8)
+        let storageRef = storage.reference().child("report_images/\(UUID().uuidString).jpg")
+        storageRef.putData(imageData!, metadata: nil) { _, error in
             if let error = error {
-                print("Error al guardar el reporte: \(error.localizedDescription)")
-            } else {
-                print("Reporte guardado exitosamente")
+                print("Error uploading image: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            storageRef.downloadURL { url, error in
+                if let error = error {
+                    print("Error getting download URL: \(error.localizedDescription)")
+                    completion(nil)
+                    return
+                }
+                completion(url)
             }
         }
+    }
 
-        showReportDetailSheet = false  // Cierra la hoja de detalles del reporte después de enviarlo.
-        currentReport = nil  // Resetea el reporte actual después de enviarlo.
+    private func saveReportData(_ data: [String: Any]) {
+        db.collection("reportes").addDocument(data: data) { error in
+            if let error = error {
+                print("Error saving report: \(error.localizedDescription)")
+            } else {
+                print("Report saved successfully")
+            }
+        }
+        showReportDetailSheet = false
+        currentReport = nil
     }
 }
