@@ -2,89 +2,99 @@
 //  MapView.swift
 //  CaminaConmigo
 //
-//  Created by a on 22-01-25.
+//  Created by a on 28-01-25.
 //
+
 
 import SwiftUI
 
+/// Vista principal del mapa donde el usuario puede interactuar con el mapa, buscar ubicaciones,
+/// y enviar reportes a través de un formulario. Incluye botones de emergencia y acciones interactivas.
 struct MapView: View {
-    @StateObject private var viewModel = MapViewModel()
-    @State private var searchText = ""
-    
+    @StateObject private var reportViewModel = ReportViewModel()  // El ViewModel que maneja la lógica de la vista del mapa.
+    @State private var searchText = ""  // El texto de búsqueda para la ubicación.
+
     var body: some View {
         ZStack {
+            // Vista del mapa representado en un contenedor que ocupa toda la pantalla.
             MapViewRepresentable()
-                .ignoresSafeArea()
-            
+                .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
+
             VStack {
+                // Barra superior que contiene el logo y la barra de búsqueda
                 HStack {
-                    Image("logo1")
+                    Image("logo1")  // Logo de la aplicación.
                         .resizable()
                         .scaledToFit()
                         .frame(height: 38)
                     
-                    // Barra de búsqueda
+                    // Barra de búsqueda para permitir la búsqueda de ubicaciones.
                     HStack {
-                        Image(systemName: "magnifyingglass")
+                        Image(systemName: "magnifyingglass")  // Icono de búsqueda.
                             .foregroundColor(.gray)
                             .padding(.leading, 8)
                         
-                        TextField("Buscar ubicación...", text: $searchText)
+                        TextField("Buscar ubicación...", text: $searchText)  // Campo de texto para la búsqueda.
                     }
                     .padding(8)
-                    .background(.ultraThinMaterial.opacity(0.6))
+                    .background(.ultraThinMaterial.opacity(0.6))  // Fondo con material translúcido.
                     .cornerRadius(30)
                 }
                 .padding()
                 
-                Spacer()
-                
-                // Botones inferiores en capas separadas
+                Spacer()  // Espaciado para separar la barra superior del resto de la interfaz.
+
+                // Botones interactivos en la parte inferior derecha de la pantalla.
                 VStack {
-                    // Botones laterales derechos
+                    // Botones laterales derechos (SOS, compartir, ayuda)
                     HStack {
-                        Spacer()
+                        Spacer()  // Empuja los botones hacia la derecha.
                         VStack(spacing: 12) {
-                            Spacer()
+                            Spacer()  // Empuja los botones hacia abajo.
+                            
+                            // Botón SOS
                             Button(action: {
-                                // Acción del botón SOS
+                                // Acción del botón SOS (debería implementar alguna funcionalidad)
                             }) {
                                 Text("SOS")
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
                                     .frame(width: 44, height: 44)
-                                    .background(Color.red)
-                                    .clipShape(Circle())
+                                    .background(Color.red)  // Fondo rojo para el botón SOS.
+                                    .clipShape(Circle())  // Hace el botón redondeado.
                             }
                             
+                            // Botón para compartir (debe implementar funcionalidad)
                             Button(action: {
-                                // Acción del botón compartir
+                                // Acción del botón compartir.
                             }) {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundColor(.purple)
                                     .frame(width: 44, height: 44)
                                     .background(.white)
-                                    .clipShape(Circle())
+                                    .clipShape(Circle())  // Botón circular.
                             }
                             
+                            // Botón de ayuda (debe implementar funcionalidad)
                             Button(action: {
-                                // Acción del botón ayuda
+                                // Acción del botón ayuda.
                             }) {
                                 Image(systemName: "questionmark")
                                     .foregroundColor(.purple)
                                     .frame(width: 44, height: 44)
                                     .background(.white)
-                                    .clipShape(Circle())
+                                    .clipShape(Circle())  // Botón circular.
                             }
                         }
                         .padding()
-                        
                     }
                 }
-                // Botón REPORTE centrado en la parte inferior
+
+                // Botón de "REPORTE" centrado en la parte inferior de la pantalla.
                 VStack {
                     Button(action: {
-                        viewModel.showReportSheet = true
+                        // Muestra la hoja para crear un nuevo reporte.
+                        reportViewModel.showReportSheet = true
                     }) {
                         Text("REPORTE")
                             .fontWeight(.bold)
@@ -98,15 +108,13 @@ struct MapView: View {
                 }
             }
         }
-        .sheet(isPresented: $viewModel.showReportSheet) {
-            ReportSheetView(viewModel: viewModel)
+        // Hoja para seleccionar el tipo de reporte.
+        .sheet(isPresented: $reportViewModel.showReportSheet) {
+            ReportSheetView(viewModel: reportViewModel)  // Vista para crear un reporte.
         }
-        .sheet(isPresented: $viewModel.showReportDetailSheet) {
-            ReportDetailView(viewModel: viewModel)
+        // Hoja para completar los detalles del reporte seleccionado.
+        .sheet(isPresented: $reportViewModel.showReportDetailSheet) {
+            ReportDetailView(viewModel: reportViewModel)  // Vista para ingresar detalles del reporte.
         }
     }
-}
-
-#Preview {
-    MapView()
 }
