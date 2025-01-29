@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 /// ViewModel para gestionar la lógica de los reportes.
 class ReportViewModel: ObservableObject {
     @Published var showReportSheet = false  // Controla la visibilidad de la hoja de reporte.
     @Published var showReportDetailSheet = false  // Controla la visibilidad de la hoja de detalles del reporte.
     @Published var currentReport: Report?  // El reporte actualmente seleccionado para ser procesado.
+
+    private let db = Firestore.firestore()
 
     // Lista de tipos de reportes disponibles para el usuario.
     let reportTypes = [
@@ -41,8 +44,23 @@ class ReportViewModel: ObservableObject {
     /// Envía el reporte al servidor o sistema de backend.
     func submitReport() {
         guard let report = currentReport else { return }
-        // Aquí irá la lógica para enviar el reporte al servidor.
-        print("Enviando reporte: \(report)")
+
+        let reportData: [String: Any] = [
+            "type": report.type.title,
+            "description": report.description,
+            "location": report.location,
+            "isAnonymous": report.isAnonymous,
+            "timestamp": Timestamp(date: Date())
+        ]
+
+        db.collection("reportes").addDocument(data: reportData) { error in
+            if let error = error {
+                print("Error al guardar el reporte: \(error.localizedDescription)")
+            } else {
+                print("Reporte guardado exitosamente")
+            }
+        }
+
         showReportDetailSheet = false  // Cierra la hoja de detalles del reporte después de enviarlo.
         currentReport = nil  // Resetea el reporte actual después de enviarlo.
     }

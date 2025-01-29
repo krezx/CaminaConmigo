@@ -100,6 +100,8 @@ struct ReportDetailView: View {
             
             // Botón para enviar el reporte.
             Button {
+                viewModel.currentReport?.description = description
+                viewModel.currentReport?.isAnonymous = isAnonymous
                 viewModel.submitReport()  // Llama al método del ViewModel para enviar el reporte.
                 dismiss()  // Cierra la vista después de enviar el reporte.
             } label: {
