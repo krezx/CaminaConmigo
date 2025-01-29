@@ -14,7 +14,8 @@ import MapKit
 struct MapViewRepresentable: UIViewRepresentable {
     
     let mapView = MKMapView()  // Instancia del mapa que se mostrará en la vista.
-    let locationManager = LocationManager()  // Instancia del manejador de ubicación, aunque no se usa directamente aquí.
+    let locationManager: LocationManager
+    @Binding var centerCoordinate: CLLocationCoordinate2D?
     
     /// Crea la vista del mapa para ser utilizada en SwiftUI.
     ///
@@ -25,6 +26,11 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapView.isRotateEnabled = false  // Deshabilita la rotación del mapa.
         mapView.showsUserLocation = true  // Muestra la ubicación actual del usuario en el mapa.
         mapView.userTrackingMode = .none  // No realiza un seguimiento activo del movimiento del usuario.
+        
+        // Gestor de gestos para detectar cuando el usuario mueve el mapa
+        let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(MapCoordinator.handleMapPan(_:)))
+        
+        mapView.addGestureRecognizer(panGesture)
         
         return mapView  // Devuelve la vista del mapa para mostrarla en la interfaz.
     }
@@ -75,6 +81,21 @@ extension MapViewRepresentable {
             
             parent.mapView.setRegion(region, animated: true)  // Actualiza la región del mapa con animación.
             initialLocationSet = true  // Marca que la ubicación inicial ha sido configurada.
+            updateCenterCoordinate()
         }
+        
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+                    updateCenterCoordinate()
+                }
+                
+                private func updateCenterCoordinate() {
+                    parent.centerCoordinate = parent.mapView.centerCoordinate
+                }
+                
+                @objc func handleMapPan(_ gesture: UIPanGestureRecognizer) {
+                    if gesture.state == .ended {
+                        updateCenterCoordinate()
+                    }
+                }
     }
 }

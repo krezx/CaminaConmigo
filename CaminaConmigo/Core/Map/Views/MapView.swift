@@ -7,17 +7,20 @@
 
 
 import SwiftUI
+import MapKit
 
 /// Vista principal del mapa donde el usuario puede interactuar con el mapa, buscar ubicaciones,
 /// y enviar reportes a través de un formulario. Incluye botones de emergencia y acciones interactivas.
 struct MapView: View {
     @StateObject private var reportViewModel = ReportViewModel()  // El ViewModel que maneja la lógica de la vista del mapa.
     @State private var searchText = ""  // El texto de búsqueda para la ubicación.
+    @StateObject private var locationManager = LocationManager()
+    @State private var centerCoordinate: CLLocationCoordinate2D?
 
     var body: some View {
         ZStack {
             // Vista del mapa representado en un contenedor que ocupa toda la pantalla.
-            MapViewRepresentable()
+            MapViewRepresentable(locationManager: locationManager, centerCoordinate: $centerCoordinate)
                 .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
 
             VStack {

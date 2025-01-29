@@ -76,8 +76,6 @@ struct ReportDetailView: View {
             Toggle("Reportar anónimamente", isOn: $isAnonymous)
                 .tint(.purple)
             
-            Spacer()
-            
             // Botones para tomar o seleccionar una foto.
             HStack(spacing: 20) {
                 Spacer()
@@ -99,6 +97,8 @@ struct ReportDetailView: View {
                 }
                 Spacer()
             }
+            
+            Spacer()
             
             // Botón para enviar el reporte.
             Button {
@@ -122,7 +122,7 @@ struct ReportDetailView: View {
             ImagePicker(image: $selectedImage)  // Muestra el selector de imágenes cuando está activo.
         }
         .sheet(isPresented: $showMapPicker) {
-            MapPickerView(coordinate: $viewModel.selectedLocation)  // Muestra el selector de mapa cuando está activo.
+            MapPickerView(viewModel: viewModel) // Muestra el selector de mapa cuando está activo.
         }
     }
 }

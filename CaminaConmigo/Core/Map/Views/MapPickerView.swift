@@ -3,31 +3,34 @@ import MapKit
 
 struct MapPickerView: View {
     @Environment(\.dismiss) var dismiss
-    @Binding var coordinate: CLLocationCoordinate2D?
-
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-    )
+    @ObservedObject var viewModel: ReportViewModel
+    @StateObject private var locationManager = LocationManager()
+    @State private var centerCoordinate: CLLocationCoordinate2D?
 
     var body: some View {
-        VStack {
-            Map(coordinateRegion: $region, interactionModes: .all, showsUserLocation: true, userTrackingMode: .follow)
-                .edgesIgnoringSafeArea(.all)
-                .onTapGesture {
-                    let location = CLLocationCoordinate2D(latitude: region.center.latitude, longitude: region.center.longitude)
-                    coordinate = location
-                    dismiss()
-                }
-            
-            Button("Seleccionar esta ubicación") {
-                coordinate = region.center
-                dismiss()
-            }
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
+        ZStack {
+            MapViewRepresentable(locationManager: locationManager, centerCoordinate: $centerCoordinate)
+            VStack {
+               Spacer()  // Empuja el mappin hacia el centro
+               Image(systemName: "mappin")
+                   .font(.system(size: 50))  // Puedes ajustar el tamaño del mappin
+                   .foregroundColor(.red)   // Cambia el color si lo deseas
+               Spacer()  // Mantiene el mappin centrado verticalmente
+               Button("Seleccionar esta ubicación") {
+                   if let coordinate = centerCoordinate {
+                       viewModel.selectedLocation = coordinate
+                       // Guardamos las coordenadas en el formato string en el location del reporte
+                       viewModel.currentReport?.location = "\(coordinate.latitude), \(coordinate.longitude)"
+                   }
+                   dismiss()
+               }
+               .padding()
+               .background(Color.blue)
+               .foregroundColor(.white)
+               .cornerRadius(8)
+               .padding(.bottom)  // Agrega un espacio desde el borde inferior
+           }
+           .frame(maxHeight: .infinity)  // Asegura que la VStack ocupe todo el espacio vertical
         }
     }
 }
