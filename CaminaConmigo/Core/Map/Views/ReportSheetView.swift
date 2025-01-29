@@ -11,12 +11,12 @@ import SwiftUI
 /// Al seleccionar un tipo de reporte, se maneja la lógica del reporte y se cierra la vista actual.
 struct ReportSheetView: View {
     @Environment(\.dismiss) var dismiss  // Permite cerrar la vista de selección de reporte.
-    @ObservedObject var viewModel: MapViewModel  // El ViewModel que maneja los tipos de reportes y la lógica asociada.
+    @ObservedObject var viewModel: ReportViewModel  // El ViewModel que maneja los tipos de reportes y la lógica asociada.
     
     // Definición de columnas para el Grid (dos columnas flexibles).
     let columns = [
         GridItem(.flexible()),  // Primera columna flexible.
-        GridItem(.flexible())   // Segunda columna flexible.
+        GridItem(.flexible())   // Segunda columna flexible
     ]
     
     var body: some View {

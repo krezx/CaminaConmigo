@@ -11,7 +11,7 @@ import SwiftUI
 /// Vista principal del mapa donde el usuario puede interactuar con el mapa, buscar ubicaciones,
 /// y enviar reportes a través de un formulario. Incluye botones de emergencia y acciones interactivas.
 struct MapView: View {
-    @StateObject private var viewModel = MapViewModel()  // El ViewModel que maneja la lógica de la vista del mapa.
+    @StateObject private var reportViewModel = ReportViewModel()  // El ViewModel que maneja la lógica de la vista del mapa.
     @State private var searchText = ""  // El texto de búsqueda para la ubicación.
 
     var body: some View {
@@ -94,7 +94,7 @@ struct MapView: View {
                 VStack {
                     Button(action: {
                         // Muestra la hoja para crear un nuevo reporte.
-                        viewModel.showReportSheet = true
+                        reportViewModel.showReportSheet = true
                     }) {
                         Text("REPORTE")
                             .fontWeight(.bold)
@@ -109,16 +109,12 @@ struct MapView: View {
             }
         }
         // Hoja para seleccionar el tipo de reporte.
-        .sheet(isPresented: $viewModel.showReportSheet) {
-            ReportSheetView(viewModel: viewModel)  // Vista para crear un reporte.
+        .sheet(isPresented: $reportViewModel.showReportSheet) {
+            ReportSheetView(viewModel: reportViewModel)  // Vista para crear un reporte.
         }
         // Hoja para completar los detalles del reporte seleccionado.
-        .sheet(isPresented: $viewModel.showReportDetailSheet) {
-            ReportDetailView(viewModel: viewModel)  // Vista para ingresar detalles del reporte.
+        .sheet(isPresented: $reportViewModel.showReportDetailSheet) {
+            ReportDetailView(viewModel: reportViewModel)  // Vista para ingresar detalles del reporte.
         }
     }
-}
-
-#Preview {
-    MapView()
 }

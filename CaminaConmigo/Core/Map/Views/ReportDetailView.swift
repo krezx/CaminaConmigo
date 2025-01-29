@@ -12,7 +12,7 @@ import PhotosUI
 /// tomar o seleccionar una foto, y elegir si quiere enviar el reporte de manera anónima o no.
 struct ReportDetailView: View {
     @Environment(\.dismiss) var dismiss  // Permite cerrar la vista de detalles del reporte.
-    @ObservedObject var viewModel: MapViewModel  // El ViewModel que maneja la lógica del reporte.
+    @ObservedObject var viewModel: ReportViewModel  // El ViewModel que maneja la lógica del reporte.
     @State private var description: String = ""  // Descripción del reporte proporcionada por el usuario.
     @State private var isAnonymous: Bool = true  // Controla si el reporte se enviará de forma anónima.
     @State private var showImagePicker = false  // Controla si se debe mostrar el selector de imagen.
