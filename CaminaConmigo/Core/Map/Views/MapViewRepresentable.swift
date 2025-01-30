@@ -16,12 +16,13 @@ struct MapViewRepresentable: UIViewRepresentable {
     let mapView = MKMapView()  // Instancia del mapa que se mostrará en la vista.
     let locationManager: LocationManager
     @Binding var centerCoordinate: CLLocationCoordinate2D?
+    @ObservedObject var viewModel: ReportViewModel
     
     /// Crea la vista del mapa para ser utilizada en SwiftUI.
     ///
     /// - Parameter context: El contexto que permite la comunicación con SwiftUI.
     /// - Returns: La vista del mapa representada por un MKMapView.
-    func makeUIView(context: Context) -> some UIView {
+    func makeUIView(context: Context) -> MKMapView {
         mapView.delegate = context.coordinator  // Asigna el coordinador como delegado del mapa.
         mapView.isRotateEnabled = false  // Deshabilita la rotación del mapa.
         mapView.showsUserLocation = true  // Muestra la ubicación actual del usuario en el mapa.
@@ -39,15 +40,20 @@ struct MapViewRepresentable: UIViewRepresentable {
     ///
     /// - Parameter uiView: La vista del mapa que necesita ser actualizada.
     /// - Parameter context: El contexto que permite la comunicación con SwiftUI.
-    func updateUIView(_ uiView: UIViewType, context: Context) {
-        // Aquí puedes manejar cualquier actualización de la vista si es necesario
+    func updateUIView(_ uiView: MKMapView, context: Context) {
+        updateAnnotations(in: uiView)
+    }
+    
+    private func updateAnnotations(in mapView: MKMapView) {
+        mapView.removeAnnotations(mapView.annotations)
+        mapView.addAnnotations(viewModel.reports)
     }
     
     /// Crea el coordinador que maneja los eventos del mapa, como la actualización de la ubicación del usuario.
     ///
     /// - Returns: Un coordinador que se encarga de gestionar los eventos del mapa.
     func makeCoordinator() -> MapCoordinator {
-        return MapCoordinator(parent: self)  // Inicializa el coordinador con la vista principal.
+        MapCoordinator(parent: self)  // Inicializa el coordinador con la vista principal.
     }
 }
 
@@ -97,5 +103,79 @@ extension MapViewRepresentable {
                         updateCenterCoordinate()
                     }
                 }
+        
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            guard let reportAnnotation = annotation as? ReportAnnotation else { return nil }
+            
+            let identifier = "ReportAnnotation"
+            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+            
+            if annotationView == nil {
+                annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                annotationView?.canShowCallout = true
+            }
+            
+            // Configurar el tamaño de la imagen del marcador
+            let size = CGSize(width: 40, height: 40)
+            
+            // Obtener la imagen correspondiente al tipo de reporte
+            if let image = UIImage(named: getImageName(for: reportAnnotation.type)) {
+                // Redimensionar la imagen al tamaño deseado
+                UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+                image.draw(in: CGRect(origin: .zero, size: size))
+                let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+                UIGraphicsEndImageContext()
+                
+                // Asignar la imagen redimensionada al marcador
+                annotationView?.image = resizedImage
+            }
+            
+            return annotationView
+        }
+        
+        private func getImageName(for type: String) -> String {
+            switch type {
+            case "Agresión Verbal":
+                return "i_agresion_verbal"
+            case "Agresión Sexual":
+                return "i_agresion_sexual"
+            case "Agresión Física":
+                return "i_agresion_fisica"
+            case "Reunión de hombres":
+                return "i_reunion_de_hombres"
+            case "Personas en situación de calle":
+                return "i_personas_en_situacion_de_calle"
+            case "Falta de Baños Públicos":
+                return "i_falta_de_baños_publicos"
+            case "Presencia de Bares y Restobares":
+                return "i_presencia_de_bares_y_restobares"
+            case "Mobiliario Inadecuado":
+                return "i_mobiliario_inadecuado"
+            case "Veredas en mal estado":
+                return "i_veredas_en_mal_estado"
+            case "Poca Iluminación":
+                return "i_poca_iluminacion"
+            case "Espacios Abandonados":
+                return "i_espacios_abandonados"
+            case "Puntos Ciegos":
+                return "i_puntos_ciegos"
+            case "Vegetación Abundante":
+                return "i_vegetacion_abundante"
+            default:
+                return "" // Imagen por defecto
+            }
+        }
+        
+        private func getColor(for type: String) -> UIColor {
+            // Personaliza el color según el tipo de reporte
+            switch type {
+            case "Agresión Sexual", "Agresión Física", "Agresión Verbal":
+                return .red
+            case "Poca Iluminación", "Puntos Ciegos":
+                return .orange
+            default:
+                return .purple
+            }
+        }
     }
 }

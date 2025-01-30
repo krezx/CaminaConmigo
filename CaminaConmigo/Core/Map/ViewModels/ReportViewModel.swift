@@ -16,6 +16,7 @@ class ReportViewModel: ObservableObject {
     @Published var showReportDetailSheet = false  // Controla la visibilidad de la hoja de detalles del reporte.
     @Published var currentReport: Report?  // El reporte actualmente seleccionado para ser procesado.
     @Published var selectedLocation: CLLocationCoordinate2D?
+    @Published var reports: [ReportAnnotation] = []
 
     private let db = Firestore.firestore()
     private let storage = Storage.storage()
@@ -37,12 +38,41 @@ class ReportViewModel: ObservableObject {
         ReportType(title: "Vegetación Abundante", imageName: "vegetacion_abundante")
     ]
     
+    init() {
+        fetchReports()
+    }
+    
+    func fetchReports() {
+        db.collection("reportes").addSnapshotListener { [weak self] querySnapshot, error in
+            guard let documents = querySnapshot?.documents else {
+                print("Error fetching reports: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            
+            self?.reports = documents.compactMap { document in
+                let data = document.data()
+                guard let latitude = data["latitude"] as? Double,
+                      let longitude = data["longitude"] as? Double,
+                      let type = data["type"] as? String,
+                      let description = data["description"] as? String else {
+                    return nil
+                }
+                
+                return ReportAnnotation(
+                    coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                    type: type,
+                    description: description
+                )
+            }
+        }
+    }
+    
     /// Maneja el evento cuando un usuario selecciona un tipo de reporte.
     /// - Parameter type: El tipo de reporte seleccionado.
     func handleReport(type: ReportType) {
-        currentReport = Report(type: type, description: "", location: "", isAnonymous: true)
-        showReportSheet = false  // Cierra la hoja de selección de reporte.
-        showReportDetailSheet = true  // Muestra la hoja de detalles del reporte.
+        currentReport = Report(type: type, description: "", location: "")
+        showReportSheet = false
+        showReportDetailSheet = true
     }
     
     /// Envía el reporte al servidor o sistema de backend.

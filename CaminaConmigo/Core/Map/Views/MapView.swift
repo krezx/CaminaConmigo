@@ -20,8 +20,12 @@ struct MapView: View {
     var body: some View {
         ZStack {
             // Vista del mapa representado en un contenedor que ocupa toda la pantalla.
-            MapViewRepresentable(locationManager: locationManager, centerCoordinate: $centerCoordinate)
-                .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
+            MapViewRepresentable(
+                locationManager: locationManager, 
+                centerCoordinate: $centerCoordinate,
+                viewModel: reportViewModel
+            )
+            .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
 
             VStack {
                 // Barra superior que contiene el logo y la barra de búsqueda

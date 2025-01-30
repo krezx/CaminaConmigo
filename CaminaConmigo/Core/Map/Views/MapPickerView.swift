@@ -1,3 +1,11 @@
+//
+//  MapPickerView.swift
+//  CaminaConmigo
+//
+//  Created by a on 29-01-25.
+//
+
+
 import SwiftUI
 import MapKit
 
@@ -9,7 +17,11 @@ struct MapPickerView: View {
 
     var body: some View {
         ZStack {
-            MapViewRepresentable(locationManager: locationManager, centerCoordinate: $centerCoordinate)
+            MapViewRepresentable(
+                locationManager: locationManager, 
+                centerCoordinate: $centerCoordinate,
+                viewModel: viewModel
+            )
             VStack {
                Spacer()  // Empuja el mappin hacia el centro
                Image(systemName: "mappin")
