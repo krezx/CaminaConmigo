@@ -8,18 +8,14 @@
 
 import SwiftUI
 
-struct EmergencyContact: Identifiable {
-    let id: Int
-    let name: String
-    let phone: String
-}
-
 struct EmergencyContactsView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var contacts: [EmergencyContact] = [
-        EmergencyContact(id: 1, name: "Mamá", phone: "+569 12345678"),
-        EmergencyContact(id: 2, name: "Papá", phone: "+569 12345679")
-    ]
+    @StateObject private var viewModel = EmergencyContactViewModel()
+    @State private var showingAddContact = false
+    @State private var showingEditContact = false
+    @State private var newContactName = ""
+    @State private var newContactPhone = ""
+    @State private var selectedContact: EmergencyContact?
     
     let pinkColor = Color(red: 239/255, green: 96/255, blue: 152/255)
     
@@ -39,98 +35,109 @@ struct EmergencyContactsView: View {
                     Spacer()
                     
                     Text("Contactos de Emergencia")
-                        .font(.title)
+                        .font(.title3)
                         .bold()
                     
-                    Spacer() // Para balancear el espacio
+                    Spacer()
                 }
-                .padding(5)
-                .background(Color(UIColor.systemBackground))
-                .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(Color.white)
+                .shadow(color: Color.gray.opacity(0.2), radius: 2)
                 
                 // Lista de contactos
-                VStack(spacing: 20) {
-                    ForEach(contacts) { contact in
+                List {
+                    ForEach(Array(viewModel.contacts.enumerated()), id: \.element.id) { index, contact in
                         HStack {
-                            Text("\(contact.id)")
-                                .font(.title)
+                            Text("\(index + 1)")
                                 .foregroundColor(.black)
-                                .frame(width: 30)
+                                .frame(width: 25)
                             
-                            HStack {
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(contact.name)
-                                    .font(.title2)
+                                    .font(.system(size: 16, weight: .medium))
                                 Text(contact.phone)
-                                    .font(.title3)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
                             }
                             
                             Spacer()
                             
                             Button(action: {
-                                // Acción para editar
+                                selectedContact = contact
+                                newContactName = contact.name
+                                newContactPhone = String(contact.phone.dropFirst(4))
+                                showingEditContact = true
                             }) {
                                 Image(systemName: "pencil")
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.gray)
                             }
                             
-                            Button(action: {
-                                // Acción para más opciones
-                            }) {
-                                Image(systemName: "arrow.up.and.down.text.horizontal")
-                                    .foregroundColor(.black)
-                            }
+                            Image(systemName: "line.3.horizontal")
+                                .foregroundColor(.gray)
+                                .padding(.leading, 8)
                         }
-                        .padding(.horizontal)
+                        .padding(.vertical, 4)
+                    }
+                    .onMove { from, to in
+                        viewModel.contacts.move(fromOffsets: from, toOffset: to)
+                        viewModel.updateContactsOrder()
                     }
                 }
+                .listStyle(PlainListStyle())
                 
                 // Botón añadir contacto
                 Button(action: {
-                    // Acción para añadir contacto
+                    showingAddContact = true
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
                         Text("Añadir contacto")
                     }
                     .foregroundColor(.black)
+                    .padding(.vertical, 30)
                 }
-                .padding()
-                
-                Spacer()
-                
-                // Botones inferiores
-                VStack(spacing: 8) {
-                    Button(action: {
-                        // Acción para Hecho
-                    }) {
-                        Text("Hecho")
-                            .font(.title)
-                            .bold()
-                            .foregroundColor(.white)
-                            .frame(width: 268, height: 57)
-                            .background(pinkColor)
-                            .cornerRadius(8)
-                    }
-                    
-                    Button(action: {
-                        // Acción para Descartar
-                    }) {
-                        Text("Descartar")
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                    }
-                }
-                .padding()
             }
+            .background(Color(UIColor.systemBackground))
         }
         .navigationBarHidden(true)
-        .toolbar(.hidden, for: .tabBar)
-    }
-}
-
-struct EmergencyContactsView_Previews: PreviewProvider {
-    static var previews: some View {
-        EmergencyContactsView()
+        .alert("Añadir Contacto", isPresented: $showingAddContact) {
+            TextField("Nombre", text: $newContactName)
+            TextField("Ingrese número sin +569 (8 dígitos)", text: $newContactPhone)
+                .keyboardType(.phonePad)
+            
+            Button("Cancelar", role: .cancel) {
+                newContactName = ""
+                newContactPhone = ""
+            }
+            
+            Button("Añadir") {
+                viewModel.addContact(name: newContactName, phone: "+569" + newContactPhone)
+                newContactName = ""
+                newContactPhone = ""
+            }
+            .disabled(newContactName.isEmpty || newContactPhone.count != 8)
+        }
+        .alert("Editar Contacto", isPresented: $showingEditContact) {
+            TextField("Nombre", text: $newContactName)
+            TextField("Ingrese número sin +569 (8 dígitos)", text: $newContactPhone)
+                .keyboardType(.phonePad)
+            
+            Button("Cancelar", role: .cancel) {
+                newContactName = ""
+                newContactPhone = ""
+                selectedContact = nil
+            }
+            
+            Button("Guardar") {
+                if let contact = selectedContact {
+                    viewModel.updateContact(id: contact.id, name: newContactName, phone: "+569" + newContactPhone)
+                    newContactName = ""
+                    newContactPhone = ""
+                    selectedContact = nil
+                }
+            }
+            .disabled(newContactName.isEmpty || newContactPhone.count != 8)
+        }
     }
 }
