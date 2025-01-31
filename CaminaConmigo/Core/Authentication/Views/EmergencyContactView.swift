@@ -14,7 +14,7 @@ struct EmergencyContactsView: View {
     @State private var showingAddContact = false
     @State private var showingEditContact = false
     @State private var newContactName = ""
-    @State private var newContactPhone = "+569"
+    @State private var newContactPhone = ""
     @State private var selectedContact: EmergencyContact?
     
     let pinkColor = Color(red: 239/255, green: 96/255, blue: 152/255)
@@ -66,7 +66,7 @@ struct EmergencyContactsView: View {
                             Button(action: {
                                 selectedContact = contact
                                 newContactName = contact.name
-                                newContactPhone = contact.phone
+                                newContactPhone = String(contact.phone.dropFirst(4))
                                 showingEditContact = true
                             }) {
                                 Image(systemName: "pencil")
@@ -103,42 +103,41 @@ struct EmergencyContactsView: View {
         .navigationBarHidden(true)
         .alert("Añadir Contacto", isPresented: $showingAddContact) {
             TextField("Nombre", text: $newContactName)
-            TextField("Número", text: $newContactPhone)
+            TextField("Ingrese número sin +569 (8 dígitos)", text: $newContactPhone)
                 .keyboardType(.phonePad)
             
             Button("Cancelar", role: .cancel) {
                 newContactName = ""
-                newContactPhone = "+569"
+                newContactPhone = ""
             }
             
             Button("Añadir") {
-                if !newContactName.isEmpty && newContactPhone.count >= 5 {
-                    viewModel.addContact(name: newContactName, phone: newContactPhone)
-                    newContactName = ""
-                    newContactPhone = "+569"
-                }
+                viewModel.addContact(name: newContactName, phone: "+569" + newContactPhone)
+                newContactName = ""
+                newContactPhone = ""
             }
+            .disabled(newContactName.isEmpty || newContactPhone.count != 8)
         }
         .alert("Editar Contacto", isPresented: $showingEditContact) {
             TextField("Nombre", text: $newContactName)
-            TextField("Número", text: $newContactPhone)
+            TextField("Ingrese número sin +569 (8 dígitos)", text: $newContactPhone)
                 .keyboardType(.phonePad)
             
             Button("Cancelar", role: .cancel) {
                 newContactName = ""
-                newContactPhone = "+569"
+                newContactPhone = ""
                 selectedContact = nil
             }
             
             Button("Guardar") {
-                if let contact = selectedContact,
-                   !newContactName.isEmpty && newContactPhone.count >= 5 {
-                    viewModel.updateContact(id: contact.id, name: newContactName, phone: newContactPhone)
+                if let contact = selectedContact {
+                    viewModel.updateContact(id: contact.id, name: newContactName, phone: "+569" + newContactPhone)
                     newContactName = ""
-                    newContactPhone = "+569"
+                    newContactPhone = ""
                     selectedContact = nil
                 }
             }
+            .disabled(newContactName.isEmpty || newContactPhone.count != 8)
         }
     }
 }
