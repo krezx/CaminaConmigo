@@ -1,3 +1,11 @@
+//
+//  EmergencyContactViewModel.swift
+//  CaminaConmigo
+//
+//  Created by a on 31-01-25.
+//
+
+
 import Foundation
 import FirebaseFirestore
 import FirebaseAuth
