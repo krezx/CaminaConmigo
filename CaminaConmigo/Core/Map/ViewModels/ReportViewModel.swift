@@ -17,6 +17,8 @@ class ReportViewModel: ObservableObject {
     @Published var currentReport: Report?  // El reporte actualmente seleccionado para ser procesado.
     @Published var selectedLocation: CLLocationCoordinate2D?
     @Published var reports: [ReportAnnotation] = []
+    @Published var comments: [Comment] = []
+    @Published var isLoadingComments = false
 
     private let db = Firestore.firestore()
     private let storage = Storage.storage()
@@ -60,6 +62,7 @@ class ReportViewModel: ObservableObject {
                 }
                 
                 let report = Report(
+                    id: document.documentID,
                     type: type,
                     description: description,
                     coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -140,5 +143,79 @@ class ReportViewModel: ObservableObject {
         }
         showReportDetailSheet = false
         currentReport = nil
+    }
+
+    /// Obtiene los comentarios para un reporte específico
+    func fetchComments(for reportId: String) {
+        isLoadingComments = true
+        db.collection("reportes").document(reportId)
+            .collection("comentarios")
+            .order(by: "timestamp", descending: true)
+            .addSnapshotListener { [weak self] querySnapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("Error fetching comments: \(error.localizedDescription)")
+                    self.isLoadingComments = false
+                    return
+                }
+                
+                guard let documents = querySnapshot?.documents else {
+                    self.comments = []
+                    self.isLoadingComments = false
+                    return
+                }
+                
+                self.comments = documents.compactMap { document in
+                    let data = document.data()
+                    guard let text = data["text"] as? String,
+                          let authorId = data["authorId"] as? String,
+                          let authorName = data["authorName"] as? String,
+                          let timestamp = data["timestamp"] as? Timestamp else {
+                        return nil
+                    }
+                    
+                    return Comment(
+                        id: document.documentID,
+                        text: text,
+                        authorId: authorId,
+                        authorName: authorName,
+                        reportId: reportId,
+                        timestamp: timestamp.dateValue()
+                    )
+                }
+                self.isLoadingComments = false
+            }
+    }
+    
+    /// Agrega un nuevo comentario a un reporte
+    func addComment(text: String, reportId: String, authorId: String, authorName: String) {
+        let commentData: [String: Any] = [
+            "text": text,
+            "authorId": authorId,
+            "authorName": authorName,
+            "reportId": reportId,
+            "timestamp": Timestamp(date: Date())
+        ]
+        
+        db.collection("reportes").document(reportId)
+            .collection("comentarios")
+            .addDocument(data: commentData) { [weak self] error in
+                if let error = error {
+                    print("Error adding comment: \(error.localizedDescription)")
+                }
+            }
+    }
+    
+    /// Elimina un comentario específico
+    func deleteComment(commentId: String, reportId: String) {
+        db.collection("reportes").document(reportId)
+            .collection("comentarios")
+            .document(commentId)
+            .delete { [weak self] error in
+                if let error = error {
+                    print("Error deleting comment: \(error.localizedDescription)")
+                }
+            }
     }
 }

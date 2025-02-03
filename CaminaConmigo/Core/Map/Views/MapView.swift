@@ -126,7 +126,7 @@ struct MapView: View {
             ReportDetailView(viewModel: reportViewModel)  // Vista para ingresar detalles del reporte.
         }
         .sheet(item: $selectedReport) { report in
-            ReportDetailPopupView(report: report)
+            ReportDetailPopupView(report: report, viewModel: reportViewModel)
         }
     }
 }
