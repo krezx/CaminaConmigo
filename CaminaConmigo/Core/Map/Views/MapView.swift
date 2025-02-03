@@ -16,6 +16,7 @@ struct MapView: View {
     @State private var searchText = ""  // El texto de búsqueda para la ubicación.
     @StateObject private var locationManager = LocationManager()
     @State private var centerCoordinate: CLLocationCoordinate2D?
+    @State private var showEmergencyCall = false
 
     var body: some View {
         ZStack {
@@ -61,14 +62,17 @@ struct MapView: View {
                             
                             // Botón SOS
                             Button(action: {
-                                // Acción del botón SOS (debería implementar alguna funcionalidad)
+                                showEmergencyCall = true
                             }) {
                                 Text("SOS")
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
                                     .frame(width: 44, height: 44)
-                                    .background(Color.red)  // Fondo rojo para el botón SOS.
-                                    .clipShape(Circle())  // Hace el botón redondeado.
+                                    .background(Color.red)
+                                    .clipShape(Circle())
+                            }
+                            .popover(isPresented: $showEmergencyCall, attachmentAnchor: .point(.top), arrowEdge: .bottom) {
+                                EmergencyCallView()
                             }
                             
                             // Botón para compartir (debe implementar funcionalidad)
