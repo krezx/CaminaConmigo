@@ -12,7 +12,9 @@ import MapKit
 /// Vista principal del mapa donde el usuario puede interactuar con el mapa, buscar ubicaciones,
 /// y enviar reportes a través de un formulario. Incluye botones de emergencia y acciones interactivas.
 struct MapView: View {
-    @StateObject private var reportViewModel = ReportViewModel()  // El ViewModel que maneja la lógica de la vista del mapa.
+    @StateObject private var viewModel = MapViewModel()
+    @StateObject private var reportViewModel = ReportViewModel()
+    @StateObject private var shakeDetector = ShakeDetector()
     @State private var searchText = ""  // El texto de búsqueda para la ubicación.
     @StateObject private var locationManager = LocationManager()
     @State private var centerCoordinate: CLLocationCoordinate2D?
@@ -126,6 +128,14 @@ struct MapView: View {
         // Hoja para completar los detalles del reporte seleccionado.
         .sheet(isPresented: $reportViewModel.showReportDetailSheet) {
             ReportDetailView(viewModel: reportViewModel)  // Vista para ingresar detalles del reporte.
+        }
+        .onAppear {
+            shakeDetector.onShakeDetected = {
+                showEmergencyCall = true
+            }
+        }
+        .onDisappear {
+            shakeDetector.stopMonitoring()
         }
     }
 }
