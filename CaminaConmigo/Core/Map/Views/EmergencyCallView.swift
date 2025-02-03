@@ -1,9 +1,55 @@
 import SwiftUI
+import AVFoundation
+import MediaPlayer
 
 struct EmergencyCallView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authViewModel: AuthenticationViewModel
     @StateObject private var emergencyContactViewModel = EmergencyContactViewModel()
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var previousVolume: Float = 0.0
+    
+    func playEmergencySound() {
+        do {
+            // Guardar el volumen actual
+            previousVolume = AVAudioSession.sharedInstance().outputVolume
+            
+            // Configurar la sesión de audio
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            // Configurar el volumen al máximo
+            let volumeView = MPVolumeView()
+            if let slider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    slider.value = 1.0
+                }
+            }
+            
+            if let soundURL = Bundle.main.url(forResource: "emergency_alarm", withExtension: "mp3") {
+                audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+                audioPlayer?.prepareToPlay()
+                audioPlayer?.numberOfLoops = -1
+                audioPlayer?.volume = 1.0
+                audioPlayer?.play()
+            }
+        } catch {
+            print("Error reproduciendo el sonido: \(error.localizedDescription)")
+        }
+    }
+    
+    func stopEmergencySound() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
+        // Restaurar el volumen anterior
+        let volumeView = MPVolumeView()
+        if let slider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                slider.value = previousVolume
+            }
+        }
+    }
     
     var body: some View {
         VStack {
@@ -61,6 +107,7 @@ struct EmergencyCallView: View {
             HStack {
                 Spacer()
                 Button(action: {
+                    stopEmergencySound()
                     dismiss()
                 }) {
                     Text("Cerrar")
@@ -78,5 +125,11 @@ struct EmergencyCallView: View {
         .shadow(color: Color.black.opacity(0.2), radius: 5)
         .frame(width: 320)
         .presentationBackground(.clear)
+        .onAppear {
+            playEmergencySound()
+        }
+        .onDisappear {
+            stopEmergencySound()
+        }
     }
 }
