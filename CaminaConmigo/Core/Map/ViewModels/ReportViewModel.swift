@@ -53,16 +53,19 @@ class ReportViewModel: ObservableObject {
                 let data = document.data()
                 guard let latitude = data["latitude"] as? Double,
                       let longitude = data["longitude"] as? Double,
-                      let type = data["type"] as? String,
-                      let description = data["description"] as? String else {
+                      let typeTitle = data["type"] as? String,
+                      let description = data["description"] as? String,
+                      let type = self?.reportTypes.first(where: { $0.title == typeTitle }) else {
                     return nil
                 }
                 
-                return ReportAnnotation(
-                    coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                let report = Report(
                     type: type,
-                    description: description
+                    description: description,
+                    coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
                 )
+                
+                return ReportAnnotation(report: report)
             }
         }
     }
@@ -70,7 +73,7 @@ class ReportViewModel: ObservableObject {
     /// Maneja el evento cuando un usuario selecciona un tipo de reporte.
     /// - Parameter type: El tipo de reporte seleccionado.
     func handleReport(type: ReportType) {
-        currentReport = Report(type: type, description: "", location: "")
+        currentReport = Report(type: type, description: "")
         showReportSheet = false
         showReportDetailSheet = true
     }
@@ -78,15 +81,18 @@ class ReportViewModel: ObservableObject {
     /// Envía el reporte al servidor o sistema de backend.
     func submitReport(image: UIImage?) {
         guard let report = currentReport else { return }
+        guard let coordinate = selectedLocation else { return }
+
+        // Actualizar las coordenadas del reporte actual
+        currentReport?.coordinate = coordinate
 
         let reportData: [String: Any] = [
             "type": report.type.title,
             "description": report.description,
-            "location": report.location,
             "isAnonymous": report.isAnonymous,
             "timestamp": Timestamp(date: Date()),
-            "latitude": selectedLocation?.latitude ?? 0,
-            "longitude": selectedLocation?.longitude ?? 0
+            "latitude": coordinate.latitude,
+            "longitude": coordinate.longitude
         ]
 
         if let image = image {
@@ -101,9 +107,13 @@ class ReportViewModel: ObservableObject {
     }
 
     private func uploadImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
-        let imageData = image.jpegData(compressionQuality: 0.8)
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            completion(nil)
+            return
+        }
+        
         let storageRef = storage.reference().child("report_images/\(UUID().uuidString).jpg")
-        storageRef.putData(imageData!, metadata: nil) { _, error in
+        storageRef.putData(imageData, metadata: nil) { _, error in
             if let error = error {
                 print("Error uploading image: \(error.localizedDescription)")
                 completion(nil)

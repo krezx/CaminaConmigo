@@ -16,6 +16,7 @@ struct MapView: View {
     @State private var searchText = ""  // El texto de búsqueda para la ubicación.
     @StateObject private var locationManager = LocationManager()
     @State private var centerCoordinate: CLLocationCoordinate2D?
+    @State private var selectedReport: ReportAnnotation?
 
     var body: some View {
         ZStack {
@@ -23,7 +24,8 @@ struct MapView: View {
             MapViewRepresentable(
                 locationManager: locationManager, 
                 centerCoordinate: $centerCoordinate,
-                viewModel: reportViewModel
+                viewModel: reportViewModel,
+                selectedReport: $selectedReport
             )
             .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
 
@@ -122,6 +124,9 @@ struct MapView: View {
         // Hoja para completar los detalles del reporte seleccionado.
         .sheet(isPresented: $reportViewModel.showReportDetailSheet) {
             ReportDetailView(viewModel: reportViewModel)  // Vista para ingresar detalles del reporte.
+        }
+        .sheet(item: $selectedReport) { report in
+            ReportDetailPopupView(report: report)
         }
     }
 }
