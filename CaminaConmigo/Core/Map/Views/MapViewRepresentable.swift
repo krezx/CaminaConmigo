@@ -17,7 +17,6 @@ struct MapViewRepresentable: UIViewRepresentable {
     let locationManager: LocationManager
     @Binding var centerCoordinate: CLLocationCoordinate2D?
     @ObservedObject var viewModel: ReportViewModel
-    @Binding var selectedReport: ReportAnnotation?
     
     /// Crea la vista del mapa para ser utilizada en SwiftUI.
     ///
@@ -120,8 +119,7 @@ extension MapViewRepresentable {
             let size = CGSize(width: 40, height: 40)
             
             // Obtener la imagen correspondiente al tipo de reporte
-            let imageName = reportAnnotation.report.type.markerImageName
-            if let image = UIImage(named: imageName) {
+            if let image = UIImage(named: getImageName(for: reportAnnotation.type)) {
                 // Redimensionar la imagen al tamaño deseado
                 UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
                 image.draw(in: CGRect(origin: .zero, size: size))
@@ -135,9 +133,48 @@ extension MapViewRepresentable {
             return annotationView
         }
         
-        func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-            if let reportAnnotation = view.annotation as? ReportAnnotation {
-                parent.selectedReport = reportAnnotation
+        private func getImageName(for type: String) -> String {
+            switch type {
+            case "Agresión Verbal":
+                return "i_agresion_verbal"
+            case "Agresión Sexual":
+                return "i_agresion_sexual"
+            case "Agresión Física":
+                return "i_agresion_fisica"
+            case "Reunión de hombres":
+                return "i_reunion_de_hombres"
+            case "Personas en situación de calle":
+                return "i_personas_en_situacion_de_calle"
+            case "Falta de Baños Públicos":
+                return "i_falta_de_baños_publicos"
+            case "Presencia de Bares y Restobares":
+                return "i_presencia_de_bares_y_restobares"
+            case "Mobiliario Inadecuado":
+                return "i_mobiliario_inadecuado"
+            case "Veredas en mal estado":
+                return "i_veredas_en_mal_estado"
+            case "Poca Iluminación":
+                return "i_poca_iluminacion"
+            case "Espacios Abandonados":
+                return "i_espacios_abandonados"
+            case "Puntos Ciegos":
+                return "i_puntos_ciegos"
+            case "Vegetación Abundante":
+                return "i_vegetacion_abundante"
+            default:
+                return "" // Imagen por defecto
+            }
+        }
+        
+        private func getColor(for type: String) -> UIColor {
+            // Personaliza el color según el tipo de reporte
+            switch type {
+            case "Agresión Sexual", "Agresión Física", "Agresión Verbal":
+                return .red
+            case "Poca Iluminación", "Puntos Ciegos":
+                return .orange
+            default:
+                return .purple
             }
         }
     }

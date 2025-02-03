@@ -9,8 +9,7 @@ import SwiftUI
 
 /// Estructura que define una vista de pestañas personalizada.
 struct TabViewCustom: View {
-    @EnvironmentObject private var navigationState: NavigationState // Estado global de navegación
-    @StateObject private var mapViewModel = MapViewModel() // ViewModel del mapa
+    @StateObject private var navigationState = TabNavigationState() // Estado para la navegación entre pestañas.
     
     /// Inicializador que configura la apariencia de la barra de pestañas.
     init() {
@@ -38,19 +37,6 @@ struct TabViewCustom: View {
                     Text("Mapa")
                 }
                 .tag(0) // Etiqueta para identificar esta pestaña.
-                .onChange(of: navigationState.shouldShowReport) { shouldShow in
-                    if shouldShow, let reportId = navigationState.selectedReportId {
-                        // Buscar el reporte en el ViewModel del mapa
-                        if let report = mapViewModel.reports.first(where: { $0.report.id == reportId }) {
-                            // Mostrar el detalle del reporte
-                            mapViewModel.selectedReport = report
-                            mapViewModel.showReportDetail = true
-                            // Resetear el estado
-                            navigationState.shouldShowReport = false
-                            navigationState.selectedReportId = nil
-                        }
-                    }
-                }
                 
             NovedadView() // Vista de novedades.
                 .tabItem { // Elemento de la pestaña de novedades.
@@ -80,7 +66,7 @@ struct TabViewCustom: View {
                 }
                 .tag(4) // Etiqueta para identificar esta pestaña.
         }
-        .environmentObject(mapViewModel) // Proporciona el ViewModel del mapa al entorno
+        .environmentObject(navigationState) // Proporciona el estado de navegación al entorno.
     }
 }
 
