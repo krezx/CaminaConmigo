@@ -61,14 +61,16 @@ struct CarouselView: View {
 struct InteractionButtonsView: View {
     @Binding var liked: Bool
     let onShare: () -> Void
+    let onLike: () -> Void
+    let likesCount: Int
     
     var body: some View {
         HStack(spacing: 20) {
-            Button(action: { liked.toggle() }) {
+            Button(action: onLike) {
                 HStack {
                     Image(systemName: liked ? "heart.fill" : "heart")
                         .foregroundColor(liked ? .red : .gray)
-                    Text("Me gusta")
+                    Text("\(likesCount) Me gusta")
                 }
             }
             
@@ -139,6 +141,7 @@ struct ReportDetailPopupView: View {
     @State private var region: MKCoordinateRegion
     @State private var showLoginAlert = false
     @State private var navigateToLogin = false
+    @State private var likesCount: Int = 0
     
     let demoImages = ["demo_image1", "demo_image2"]
     
@@ -169,7 +172,9 @@ struct ReportDetailPopupView: View {
                     
                     InteractionButtonsView(
                         liked: $liked,
-                        onShare: shareReport
+                        onShare: shareReport,
+                        onLike: handleLike,
+                        likesCount: likesCount
                     )
                     
                     Divider()
@@ -196,6 +201,13 @@ struct ReportDetailPopupView: View {
             .onAppear {
                 if let reportId = report.report.id {
                     viewModel.fetchComments(for: reportId)
+                    likesCount = report.report.likes
+                    
+                    if let userId = authViewModel.userSession?.uid {
+                        viewModel.checkLikeStatus(for: reportId, userId: userId) { isLiked in
+                            liked = isLiked
+                        }
+                    }
                 }
             }
             .alert("Iniciar Sesión", isPresented: $showLoginAlert) {
@@ -241,6 +253,22 @@ struct ReportDetailPopupView: View {
             authorName: profileViewModel.userProfile?.username ?? "Usuario"
         )
         comment = ""
+    }
+    
+    private func handleLike() {
+        guard let user = authViewModel.userSession else {
+            showLoginAlert = true
+            return
+        }
+        
+        guard let reportId = report.report.id else {
+            print("Error: No se pudo obtener el ID del reporte")
+            return
+        }
+        
+        viewModel.toggleLike(for: reportId, userId: user.uid)
+        liked.toggle()
+        likesCount += liked ? 1 : -1
     }
 }
 

@@ -61,11 +61,14 @@ class ReportViewModel: ObservableObject {
                     return nil
                 }
                 
+                let likes = data["likes"] as? Int ?? 0
+                
                 let report = Report(
                     id: document.documentID,
                     type: type,
                     description: description,
-                    coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+                    coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                    likes: likes
                 )
                 
                 return ReportAnnotation(report: report)
@@ -95,7 +98,8 @@ class ReportViewModel: ObservableObject {
             "isAnonymous": report.isAnonymous,
             "timestamp": Timestamp(date: Date()),
             "latitude": coordinate.latitude,
-            "longitude": coordinate.longitude
+            "longitude": coordinate.longitude,
+            "likes": 0
         ]
 
         if let image = image {
@@ -216,6 +220,45 @@ class ReportViewModel: ObservableObject {
                 if let error = error {
                     print("Error deleting comment: \(error.localizedDescription)")
                 }
+            }
+    }
+    
+    /// Maneja el like de un reporte
+    func toggleLike(for reportId: String, userId: String) {
+        let reportRef = db.collection("reportes").document(reportId)
+        let likesRef = reportRef.collection("likes")
+        
+        likesRef.document(userId).getDocument { [weak self] snapshot, error in
+            if let error = error {
+                print("Error checking like status: \(error.localizedDescription)")
+                return
+            }
+            
+            if let snapshot = snapshot, snapshot.exists {
+                // Si ya existe un like, lo removemos
+                likesRef.document(userId).delete()
+                reportRef.updateData(["likes": FieldValue.increment(Int64(-1))])
+            } else {
+                // Si no existe un like, lo añadimos
+                likesRef.document(userId).setData(["timestamp": Timestamp(date: Date())])
+                reportRef.updateData(["likes": FieldValue.increment(Int64(1))])
+            }
+        }
+    }
+    
+    /// Verifica si un usuario ha dado like a un reporte
+    func checkLikeStatus(for reportId: String, userId: String, completion: @escaping (Bool) -> Void) {
+        db.collection("reportes").document(reportId)
+            .collection("likes")
+            .document(userId)
+            .getDocument { snapshot, error in
+                if let error = error {
+                    print("Error checking like status: \(error.localizedDescription)")
+                    completion(false)
+                    return
+                }
+                
+                completion(snapshot?.exists ?? false)
             }
     }
 }

@@ -33,12 +33,13 @@ struct Report: Identifiable, Codable {
         case likes
     }
     
-    init(id: String? = nil, type: ReportType, description: String, coordinate: CLLocationCoordinate2D? = nil, isAnonymous: Bool = true) {
+    init(id: String? = nil, type: ReportType, description: String, coordinate: CLLocationCoordinate2D? = nil, isAnonymous: Bool = true, likes: Int = 0) {
         self.id = id
         self.type = type
         self.description = description
         self.coordinate = coordinate
         self.isAnonymous = isAnonymous
+        self.likes = likes
     }
     
     init(from decoder: Decoder) throws {
