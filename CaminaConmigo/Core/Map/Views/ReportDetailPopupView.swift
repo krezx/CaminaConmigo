@@ -225,13 +225,43 @@ struct ReportDetailPopupView: View {
     }
     
     private func shareReport() {
-        let shareText = "Reporte de \(report.report.type.title) en CaminaConmigo"
-        let activityVC = UIActivityViewController(activityItems: [shareText], applicationActivities: nil)
+        guard let reportId = report.report.id else { return }
         
+        // Crear el texto del mensaje con el deep link
+        let deepLinkUrl = "caminaconmigo://report/\(reportId)"
+        let shareText = """
+        🚨 Reporte de \(report.report.type.title) en CaminaConmigo
+        
+        📍 Ver detalles del reporte:
+        \(deepLinkUrl)
+        
+        💡 Si no tienes la app, búscala en la App Store como "CaminaConmigo"
+        """
+        
+        // Crear los items para compartir
+        let activityItems: [Any] = [shareText]
+        let activityVC = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+        
+        // Obtener la ventana y el controlador raíz
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootVC = window.rootViewController {
-            rootVC.present(activityVC, animated: true)
+           let window = windowScene.windows.first {
+            // En iPad, necesitamos especificar el origen del popover
+            if let popoverController = activityVC.popoverPresentationController {
+                popoverController.sourceView = window
+                popoverController.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                popoverController.permittedArrowDirections = []
+            }
+            
+            // Encontrar el controlador más alto en la jerarquía que no esté presentando
+            var topController = window.rootViewController
+            while let presentedController = topController?.presentedViewController {
+                topController = presentedController
+            }
+            
+            // Presentar el activity controller
+            DispatchQueue.main.async {
+                topController?.present(activityVC, animated: true)
+            }
         }
     }
     
