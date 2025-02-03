@@ -26,7 +26,8 @@ struct MapView: View {
             MapViewRepresentable(
                 locationManager: locationManager, 
                 centerCoordinate: $centerCoordinate,
-                viewModel: reportViewModel
+                viewModel: reportViewModel,
+                selectedReport: $selectedReport
             )
             .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
 
