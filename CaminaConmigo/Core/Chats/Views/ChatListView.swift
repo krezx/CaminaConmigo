@@ -9,6 +9,9 @@ import SwiftUI // Importa el framework SwiftUI para construir la interfaz de usu
 
 /// Vista principal que muestra una lista de chats disponibles.
 struct ChatListView: View {
+    @StateObject private var friendsViewModel = FriendsViewModel()
+    @State private var showAddFriend = false
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -26,15 +29,27 @@ struct ChatListView: View {
                 // Lista de chats en forma de desplazamiento
                 ScrollView {
                     VStack(spacing: 0) {
-                        ChatHeaderButtons() // Muestra botones para agregar amigos o crear un grupo
+                        ChatHeaderButtons(showAddFriend: $showAddFriend)
                             .padding(.horizontal)
                         
-                        LazyVStack(spacing: 0) {
-                            // Para cada chat en sampleChats, se crea una fila en la lista.
-                            ForEach(sampleChats) { chat in
-                                ChatRowView(chat: chat) // Vista que representa una fila de chat
+                        if friendsViewModel.isLoading {
+                            ProgressView()
+                                .padding()
+                        } else if friendsViewModel.friends.isEmpty {
+                            Text("No tienes amigos agregados aún")
+                                .foregroundColor(.gray)
+                                .padding()
+                        } else {
+                            LazyVStack(spacing: 0) {
+                                ForEach(friendsViewModel.friends, id: \.id) { friend in
+                                    ChatRowView(chat: Chat(
+                                        name: friend.name,
+                                        lastMessage: "Toca para iniciar una conversación",
+                                        timeString: ""
+                                    ))
                                     .padding(.horizontal)
-                                Divider() // Separador entre los chats
+                                    Divider()
+                                }
                             }
                         }
                     }
@@ -42,15 +57,29 @@ struct ChatListView: View {
             }
         }
         .navigationBarHidden(true) // Oculta la barra de navegación de la vista
+        .sheet(isPresented: $showAddFriend) {
+            AddFriendView()
+        }
+        .alert("Error", isPresented: .constant(friendsViewModel.error != nil)) {
+            Button("OK") {
+                friendsViewModel.error = nil
+            }
+        } message: {
+            if let error = friendsViewModel.error {
+                Text(error)
+            }
+        }
     }
 }
 
 /// Vista que representa los botones en el encabezado de la lista de chats. Los botones permiten añadir amigos o crear grupos.
 struct ChatHeaderButtons: View {
+    @Binding var showAddFriend: Bool
+    
     var body: some View {
         HStack(spacing: 15) {
             // Botón para añadir un amigo
-            Button(action: {}) {
+            Button(action: { showAddFriend = true }) {
                 HStack {
                     Image(systemName: "person.badge.plus") // Icono de añadir amigo
                     Text("Añadir Amigo")
