@@ -19,7 +19,7 @@ struct Report: Identifiable, Codable {
     var coordinate: CLLocationCoordinate2D?
     var isAnonymous: Bool = true
     var images: [UIImage] = []
-    var timestamp: Date = Date()
+    var timestamp: Date
     var likes: Int = 0
     
     enum CodingKeys: String, CodingKey {
@@ -33,13 +33,14 @@ struct Report: Identifiable, Codable {
         case likes
     }
     
-    init(id: String? = nil, type: ReportType, description: String, coordinate: CLLocationCoordinate2D? = nil, isAnonymous: Bool = true, likes: Int = 0) {
+    init(id: String? = nil, type: ReportType, description: String, coordinate: CLLocationCoordinate2D? = nil, isAnonymous: Bool = true, likes: Int = 0, timestamp: Date = Date()) {
         self.id = id
         self.type = type
         self.description = description
         self.coordinate = coordinate
         self.isAnonymous = isAnonymous
         self.likes = likes
+        self.timestamp = timestamp
     }
     
     init(from decoder: Decoder) throws {

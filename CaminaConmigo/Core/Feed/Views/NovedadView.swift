@@ -6,12 +6,16 @@
 //
 
 import SwiftUI // Importa el framework SwiftUI para crear la interfaz de usuario
+import MapKit
 
 /// Vista principal para mostrar novedades y reportes.
 struct NovedadView: View {
+    @StateObject private var viewModel = ReportViewModel()
     @State private var searchText = "" // Texto de búsqueda
     @State private var selectedFilter = "Tendencias" // Filtro seleccionado
-    let filters = ["Tendencias", "Recientes", "Ciudad"] // Filtros disponibles para las novedades
+    @State private var selectedReport: ReportAnnotation?
+    @State private var showReportDetail = false
+    private let filters = ["Tendencias", "Recientes", "Ciudad"] // Filtros disponibles para las novedades
     
     var body: some View {
         VStack(spacing: 0) {
@@ -28,10 +32,14 @@ struct NovedadView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
                         ForEach(filters, id: \.self) { filter in
-                            FilterButton(title: filter,
-                                       isSelected: filter == selectedFilter) {
-                                selectedFilter = filter
-                            }
+                            FilterButton(
+                                title: filter,
+                                isSelected: filter == selectedFilter,
+                                action: {
+                                    selectedFilter = filter
+                                    viewModel.filterReports(by: filter)
+                                }
+                            )
                         }
                     }
                 }
@@ -41,12 +49,25 @@ struct NovedadView: View {
             // Lista de reportes
             ScrollView {
                 LazyVStack(spacing: 16) {
-                    ForEach(0..<5) { _ in
-                        ReporteCard() // Muestra un reporte en forma de tarjeta
+                    ForEach(viewModel.filteredReports) { report in
+                        ReporteCard(report: report, viewModel: viewModel)
+                            .onTapGesture {
+                                selectedReport = report
+                                showReportDetail = true
+                            }
                     }
                 }
                 .padding() // Añade espacio alrededor de la lista de reportes
             }
+        }
+        .sheet(isPresented: $showReportDetail) {
+            if let report = selectedReport {
+                ReportDetailPopupView(report: report, viewModel: viewModel)
+            }
+        }
+        .onAppear {
+            viewModel.fetchReports()
+            viewModel.filterReports(by: selectedFilter)
         }
     }
 }
@@ -88,58 +109,112 @@ struct FilterButton: View {
 
 /// Vista que representa una tarjeta de reporte. Cada tarjeta contiene información sobre un reporte, incluyendo un mapa, una descripción y botones de interacción.
 struct ReporteCard: View {
+    let report: ReportAnnotation
+    @State private var region: MKCoordinateRegion
+    @State private var commentCount: Int = 0
+    @ObservedObject var viewModel: ReportViewModel
+    
+    init(report: ReportAnnotation, viewModel: ReportViewModel) {
+        self.report = report
+        self.viewModel = viewModel
+        _region = State(initialValue: MKCoordinateRegion(
+            center: report.coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        ))
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header del reporte con usuario y tiempo de publicación
+            // Header con icono y tipo de reporte
             HStack {
-                Circle()
-                    .frame(width: 40, height: 40)
-                    .foregroundColor(.gray) // Imagen de perfil del usuario (simulada con un círculo gris)
+                Image(report.report.type.imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 30, height: 30)
+                
                 VStack(alignment: .leading) {
-                    Text("Usuario")
-                        .fontWeight(.bold) // Nombre de usuario en negrita
-                    Text("Hace 1h") // Tiempo desde la publicación
+                    Text(report.report.type.title)
+                        .font(.headline)
+                    Text("hace " + timeAgoDisplay(date: report.report.timestamp))
+                        .font(.caption)
                         .foregroundColor(.gray)
                 }
             }
             
-            // Mapa representado como un rectángulo con texto
-            Rectangle()
-                .frame(height: 200)
-                .foregroundColor(Color(.systemGray5))
-                .overlay(
-                    Text("Mapa")
-                        .foregroundColor(.gray) // Texto que indica que es un mapa
-                )
-            
             // Descripción del reporte
-            Text("Persona en situación de calle")
-                .fontWeight(.medium)
+            Text(report.report.description)
+                .lineLimit(3)
+                .padding(.vertical, 4)
             
-            // Botones de interacción para dar "me gusta", comentar y compartir
-            HStack {
+            // Mapa
+            Map(coordinateRegion: .constant(region),
+                annotationItems: [report]) { location in
+                MapMarker(coordinate: location.coordinate)
+            }
+            .frame(height: 200)
+            .cornerRadius(12)
+            .allowsHitTesting(false)
+            
+            // Botones de interacción
+            HStack(spacing: 20) {
                 Button(action: {}) {
-                    Image(systemName: "heart") // Ícono de corazón
+                    Image(systemName: "heart")
                         .bold()
-                    Text("10") // Número de "me gusta"
+                    Text("\(report.report.likes) Me gusta")
                 }
                 Button(action: {}) {
-                    Image(systemName: "bubble.right") // Ícono de comentario
+                    Image(systemName: "bubble.right")
                         .bold()
-                    Text("5") // Número de comentarios
-                }
-                Button(action: {}) {
-                    Image(systemName: "square.and.arrow.up") // Ícono de compartir
-                        .bold()
-                    Text("Compartir") // Texto de compartir
+                    Text("\(commentCount) Comentarios")
                 }
             }
-            .foregroundColor(.black) // Color del texto y los íconos
+            .foregroundColor(.black)
         }
-        .padding() // Añade espacio alrededor de la tarjeta
-        .background(Color.white) // Fondo blanco para la tarjeta
-        .cornerRadius(12) // Bordes redondeados
-        .shadow(radius: 2) // Sombra para dar un efecto de elevación
+        .padding()
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(radius: 2)
+        .onAppear {
+            if let reportId = report.report.id {
+                viewModel.getCommentCount(for: reportId) { count in
+                    commentCount = count
+                }
+            }
+        }
+    }
+    
+    private func timeAgoDisplay(date: Date) -> String {
+        let seconds = -date.timeIntervalSinceNow
+        
+        let minute = 60.0
+        let hour = minute * 60
+        let day = hour * 24
+        let week = day * 7
+        let month = day * 30
+        let year = day * 365
+        
+        switch seconds {
+        case 0..<minute:
+            return "hace un momento"
+        case minute..<hour:
+            let minutes = Int(seconds/minute)
+            return "hace \(minutes) \(minutes == 1 ? "minuto" : "minutos")"
+        case hour..<day:
+            let hours = Int(seconds/hour)
+            return "hace \(hours) \(hours == 1 ? "hora" : "horas")"
+        case day..<week:
+            let days = Int(seconds/day)
+            return "hace \(days) \(days == 1 ? "día" : "días")"
+        case week..<month:
+            let weeks = Int(seconds/week)
+            return "hace \(weeks) \(weeks == 1 ? "semana" : "semanas")"
+        case month..<year:
+            let months = Int(seconds/month)
+            return "hace \(months) \(months == 1 ? "mes" : "meses")"
+        default:
+            let years = Int(seconds/year)
+            return "hace \(years) \(years == 1 ? "año" : "años")"
+        }
     }
 }
 

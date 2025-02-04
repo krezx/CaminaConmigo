@@ -19,6 +19,8 @@ class ReportViewModel: ObservableObject {
     @Published var reports: [ReportAnnotation] = []
     @Published var comments: [Comment] = []
     @Published var isLoadingComments = false
+    @Published var filteredReports: [ReportAnnotation] = []
+    @Published var selectedFilter: String = "Tendencias"
 
     private let db = Firestore.firestore()
     private let storage = Storage.storage()
@@ -46,18 +48,20 @@ class ReportViewModel: ObservableObject {
     
     func fetchReports() {
         db.collection("reportes").addSnapshotListener { [weak self] querySnapshot, error in
+            guard let self = self else { return }
             guard let documents = querySnapshot?.documents else {
                 print("Error fetching reports: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
             
-            self?.reports = documents.compactMap { document in
+            self.reports = documents.compactMap { document in
                 let data = document.data()
                 guard let latitude = data["latitude"] as? Double,
                       let longitude = data["longitude"] as? Double,
                       let typeTitle = data["type"] as? String,
                       let description = data["description"] as? String,
-                      let type = self?.reportTypes.first(where: { $0.title == typeTitle }) else {
+                      let timestamp = data["timestamp"] as? Timestamp,
+                      let type = self.reportTypes.first(where: { $0.title == typeTitle }) else {
                     return nil
                 }
                 
@@ -68,11 +72,15 @@ class ReportViewModel: ObservableObject {
                     type: type,
                     description: description,
                     coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
-                    likes: likes
+                    likes: likes,
+                    timestamp: timestamp.dateValue()
                 )
                 
                 return ReportAnnotation(report: report)
             }
+            
+            // Aplicar el filtro actual después de obtener los reportes
+            self.filterReports(by: self.selectedFilter)
         }
     }
     
@@ -259,6 +267,34 @@ class ReportViewModel: ObservableObject {
                 }
                 
                 completion(snapshot?.exists ?? false)
+            }
+    }
+
+    func filterReports(by filter: String) {
+        switch filter {
+        case "Tendencias":
+            filteredReports = reports.sorted { $0.report.likes > $1.report.likes }
+        case "Recientes":
+            filteredReports = reports.sorted { $0.report.timestamp > $1.report.timestamp }
+        case "Ciudad":
+            filteredReports = reports // Por ahora mostramos todos, podríamos filtrar por ciudad si agregamos esa información
+        default:
+            filteredReports = reports
+        }
+    }
+
+    /// Obtiene el número de comentarios de un reporte
+    func getCommentCount(for reportId: String, completion: @escaping (Int) -> Void) {
+        db.collection("reportes").document(reportId)
+            .collection("comentarios")
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("Error getting comment count: \(error.localizedDescription)")
+                    completion(0)
+                    return
+                }
+                
+                completion(snapshot?.documents.count ?? 0)
             }
     }
 }
