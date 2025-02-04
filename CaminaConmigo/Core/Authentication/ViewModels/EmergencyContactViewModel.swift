@@ -104,4 +104,20 @@ class EmergencyContactViewModel: ObservableObject {
                 }
             }
     }
+    
+    func deleteContact(id: String) {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        db.collection("users").document(userId)
+            .collection("emergency_contacts")
+            .document(id)
+            .delete { [weak self] error in
+                if let error = error {
+                    self?.error = error.localizedDescription
+                } else {
+                    // Actualizar el orden después de eliminar
+                    self?.updateContactsOrder()
+                }
+            }
+    }
 } 

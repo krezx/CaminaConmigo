@@ -20,6 +20,7 @@ struct MapView: View {
     @State private var centerCoordinate: CLLocationCoordinate2D?
     @State private var selectedReport: ReportAnnotation?
     @State private var showEmergencyCall = false
+    @State private var showReportDetail = false  // Nuevo estado para controlar la presentación
 
     var body: some View {
         ZStack {
@@ -31,6 +32,11 @@ struct MapView: View {
                 selectedReport: $selectedReport
             )
             .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
+            .onChange(of: selectedReport) { newValue in
+                if newValue != nil {
+                    showReportDetail = true
+                }
+            }
 
             VStack {
                 // Barra superior que contiene el logo y la barra de búsqueda
@@ -130,6 +136,13 @@ struct MapView: View {
         // Hoja para completar los detalles del reporte seleccionado.
         .sheet(isPresented: $reportViewModel.showReportDetailSheet) {
             ReportDetailView(viewModel: reportViewModel)  // Vista para ingresar detalles del reporte.
+        }
+        .sheet(isPresented: $showReportDetail, onDismiss: {
+            selectedReport = nil
+        }) {
+            if let report = selectedReport {
+                ReportDetailPopupView(report: report, viewModel: reportViewModel)
+            }
         }
         .onAppear {
             shakeDetector.onShakeDetected = {

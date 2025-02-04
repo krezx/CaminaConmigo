@@ -10,7 +10,7 @@ import SwiftUI
 /// Vista que muestra el menú principal de la aplicación, proporcionando opciones para el perfil,
 /// chats, contactos de emergencia, notificaciones, invitaciones, sugerencias, configuración y cerrar sesión.
 struct MenuView: View {
-    @EnvironmentObject var navigationState: TabNavigationState  // Estado de navegación de las pestañas.
+    @EnvironmentObject var navigationState: NavigationState  // Estado de navegación global
     @EnvironmentObject var authViewModel: AuthenticationViewModel  // Vista de autenticación para manejar sesión.
     
     // Propiedades de estado para controlar las transiciones de navegación.
@@ -54,7 +54,7 @@ struct MenuView: View {
                             window.rootViewController?.dismiss(animated: true)
                         }
                         withAnimation {
-                            navigationState.selectedTab = 2  // Cambiar a la pestaña de Chats.
+                            navigationState.selectedTab = 2  // Cambiar a la pestaña de Chats
                         }
                     } label: {
                         MenuItem(icon: "bubble.left.and.bubble.right", title: "Chats")

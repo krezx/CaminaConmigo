@@ -78,6 +78,13 @@ struct EmergencyContactsView: View {
                                 .padding(.leading, 8)
                         }
                         .padding(.vertical, 4)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                viewModel.deleteContact(id: contact.id)
+                            } label: {
+                                Label("Eliminar", systemImage: "trash")
+                            }
+                        }
                     }
                     .onMove { from, to in
                         viewModel.contacts.move(fromOffsets: from, toOffset: to)
