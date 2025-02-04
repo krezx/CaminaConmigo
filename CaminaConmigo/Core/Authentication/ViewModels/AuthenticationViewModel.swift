@@ -9,12 +9,14 @@ import Foundation // Importa el framework Foundation para trabajar con tipos bá
 import Firebase // Importa Firebase para la autenticación.
 import GoogleSignIn // Importa la biblioteca de Google Sign-In para autenticar usuarios con Google.
 import FirebaseAuth // Importa FirebaseAuth para gestionar la autenticación de usuarios en Firebase.
+import FirebaseFirestore // Importa FirebaseFirestore para trabajar con Firestore.
 
 /// ViewModel que gestiona la autenticación del usuario, utilizando Firebase y Google Sign-In.
 class AuthenticationViewModel: ObservableObject {
     @Published var userSession: FirebaseAuth.User? // Almacena la sesión actual del usuario autenticado.
     @Published var currentUser: User? // Información adicional del usuario (aunque no se utiliza explícitamente en el código).
     @Published var isGuestMode: Bool = false // Indica si el usuario está en modo invitado.
+    private let db = Firestore.firestore() // Agregamos referencia a Firestore
     
     /// Inicializador que establece la sesión del usuario si ya está autenticado en Firebase.
     init() {
@@ -55,6 +57,16 @@ class AuthenticationViewModel: ObservableObject {
             // Inicia sesión en Firebase utilizando las credenciales de Google.
             let authResult = try await Auth.auth().signIn(with: credential)
             self.userSession = authResult.user // Establece la sesión del usuario en Firebase.
+            
+            // Crear o actualizar el perfil del usuario
+            let userProfile = UserProfile(
+                id: authResult.user.uid,
+                name: authResult.user.displayName ?? "",
+                email: authResult.user.email ?? ""
+            )
+            
+            // Guardar el perfil en Firestore
+            try await db.collection("users").document(authResult.user.uid).setData(from: userProfile)
             
         } catch {
             throw AuthError.signInError // Lanza un error si ocurre un fallo durante el proceso de inicio de sesión.
