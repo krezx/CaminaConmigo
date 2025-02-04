@@ -36,24 +36,40 @@ struct CarouselView: View {
     let demoImages: [String]
     
     var body: some View {
-        TabView(selection: $currentImageIndex) {
-            Map(coordinateRegion: .constant(region), annotationItems: [report]) { location in
-                MapMarker(coordinate: location.coordinate)
+        VStack {
+            TabView(selection: $currentImageIndex) {
+                Map(coordinateRegion: .constant(region), annotationItems: [report]) { location in
+                    MapMarker(coordinate: location.coordinate)
+                }
+                .frame(height: 200)
+                .tag(0)
+                
+                ForEach(0..<demoImages.count, id: \.self) { index in
+                    Image(demoImages[index])
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 200)
+                        .clipped()
+                        .tag(index + 1)
+                }
             }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never)) // Oculta el indicador de página del TabView
             .frame(height: 200)
-            .tag(0)
-            
-            ForEach(0..<demoImages.count, id: \.self) { index in
-                Image(demoImages[index])
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 200)
-                    .clipped()
-                    .tag(index)
+
+            // Indicadores de página manualmente interactivos
+            HStack {
+                ForEach(0..<demoImages.count + 1, id: \.self) { index in
+                    Circle()
+                        .fill(index == currentImageIndex ? Color.blue : Color.gray)
+                        .frame(width: 8, height: 8)
+                        .onTapGesture {
+                            // Cambia el índice actual al que se ha tocado
+                            currentImageIndex = index
+                        }
+                }
             }
+            .padding(.top, 8) // Espaciado entre el TabView y el indicador
         }
-        .tabViewStyle(PageTabViewStyle())
-        .frame(height: 200)
     }
 }
 
@@ -135,7 +151,7 @@ struct ReportDetailPopupView: View {
     @ObservedObject var viewModel: ReportViewModel
     @EnvironmentObject var authViewModel: AuthenticationViewModel
     @StateObject private var profileViewModel = ProfileViewModel()
-    @State private var currentImageIndex = 0
+    @State private var currentImageIndex = 1
     @State private var comment: String = ""
     @State private var liked = false
     @State private var region: MKCoordinateRegion
