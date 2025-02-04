@@ -9,7 +9,7 @@ import Foundation // Importa el framework Foundation para manejar datos como fec
 
 /// Estructura que representa el perfil de un usuario.
 /// Conforma el protocolo `Codable` para permitir la conversión a y desde formatos de datos como JSON.
-struct UserProfile: Codable {
+struct UserProfile: Identifiable, Codable {
     var id: String // Identificador único del usuario.
     var name: String // Nombre completo del usuario.
     var username: String // Nombre de usuario.

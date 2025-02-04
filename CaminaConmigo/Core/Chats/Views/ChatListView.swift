@@ -6,11 +6,22 @@
 //
 
 import SwiftUI // Importa el framework SwiftUI para construir la interfaz de usuario.
+import FirebaseAuth
 
 /// Vista principal que muestra una lista de chats disponibles.
 struct ChatListView: View {
+    @StateObject private var viewModel = ChatViewModel()
     @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var showAddFriend = false
+    
+    private var friendsWithoutChat: [UserProfile] {
+        // Filtramos los amigos que no tienen un chat activo
+        friendsViewModel.friends.filter { friend in
+            !viewModel.chats.contains { chat in
+                chat.participants.contains(friend.id)
+            }
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -32,24 +43,54 @@ struct ChatListView: View {
                         ChatHeaderButtons(showAddFriend: $showAddFriend)
                             .padding(.horizontal)
                         
-                        if friendsViewModel.isLoading {
+                        if viewModel.isLoading || friendsViewModel.isLoading {
                             ProgressView()
                                 .padding()
-                        } else if friendsViewModel.friends.isEmpty {
-                            Text("No tienes amigos agregados aún")
-                                .foregroundColor(.gray)
-                                .padding()
                         } else {
-                            LazyVStack(spacing: 0) {
-                                ForEach(friendsViewModel.friends, id: \.id) { friend in
-                                    ChatRowView(chat: Chat(
-                                        name: friend.name,
-                                        lastMessage: "Toca para iniciar una conversación",
-                                        timeString: ""
-                                    ))
-                                    .padding(.horizontal)
-                                    Divider()
+                            // Chats activos
+                            if !viewModel.chats.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Chats activos")
+                                        .font(.headline)
+                                        .padding(.horizontal)
+                                        .padding(.top)
+                                    
+                                    LazyVStack(spacing: 0) {
+                                        ForEach(viewModel.chats) { chat in
+                                            ChatRowView(chat: chat)
+                                                .padding(.horizontal)
+                                            Divider()
+                                        }
+                                    }
                                 }
+                            }
+                            
+                            // Amigos sin chat
+                            if !friendsWithoutChat.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Amigos")
+                                        .font(.headline)
+                                        .padding(.horizontal)
+                                        .padding(.top)
+                                    
+                                    LazyVStack(spacing: 0) {
+                                        ForEach(friendsWithoutChat) { friend in
+                                            Button(action: {
+                                                viewModel.createNewChat(with: friend.id, name: friend.name)
+                                            }) {
+                                                FriendRowView(friend: friend)
+                                                    .padding(.horizontal)
+                                            }
+                                            Divider()
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if viewModel.chats.isEmpty && friendsWithoutChat.isEmpty {
+                                Text("No tienes chats activos ni amigos agregados")
+                                    .foregroundColor(.gray)
+                                    .padding()
                             }
                         }
                     }
@@ -60,14 +101,19 @@ struct ChatListView: View {
         .sheet(isPresented: $showAddFriend) {
             AddFriendView()
         }
-        .alert("Error", isPresented: .constant(friendsViewModel.error != nil)) {
+        .alert("Error", isPresented: .constant(viewModel.error != nil || friendsViewModel.error != nil)) {
             Button("OK") {
+                viewModel.error = nil
                 friendsViewModel.error = nil
             }
         } message: {
-            if let error = friendsViewModel.error {
+            if let error = viewModel.error ?? friendsViewModel.error {
                 Text(error)
             }
+        }
+        .onAppear {
+            viewModel.listenToChats()
+            friendsViewModel.loadFriends()
         }
     }
 }
@@ -135,25 +181,30 @@ struct ChatRowView: View {
     }
 }
 
-/// Estructura que representa un chat individual. Implementa `Identifiable` para que pueda ser utilizado en una lista.
-struct Chat: Identifiable {
-    let id = UUID() // ID único para el chat
-    let name: String // Nombre del chat
-    let lastMessage: String // Último mensaje enviado
-    let timeString: String // Hora del último mensaje
-}
-
-/// Datos de ejemplo para mostrar en la lista de chats.
-let sampleChats = [
-    Chat(name: "John Doe", lastMessage: "Tu: Ya llegué a mi destino amiga", timeString: "10 min"),
-    Chat(name: "Jane Doe", lastMessage: "Avísame si saldrás hoy", timeString: "10 min"),
-    Chat(name: "Familia", lastMessage: "Papá: Ya llegaron??", timeString: "33 min"),
-    Chat(name: "Name", lastMessage: "Supporting line text lorem ipsum dolor...", timeString: "10 min"),
-]
-
-/// Vista previa para mostrar la vista en el canvas de Xcode.
-struct ChatListView_Previews: PreviewProvider {
-    static var previews: some View {
-        ChatListView() // Vista previa de ChatListView
+struct FriendRowView: View {
+    let friend: UserProfile
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 50, height: 50)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(friend.name)
+                    .font(.system(size: 16, weight: .medium))
+                
+                Text("Toca para iniciar una conversación")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            Image(systemName: "message")
+                .foregroundColor(.blue)
+        }
+        .padding(.vertical, 8)
     }
 }
