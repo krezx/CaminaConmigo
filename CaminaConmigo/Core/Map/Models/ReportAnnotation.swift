@@ -7,19 +7,17 @@
 
 import MapKit
 
-class ReportAnnotation: NSObject, MKAnnotation {
+class ReportAnnotation: NSObject, MKAnnotation, Identifiable {
+    let id = UUID()
     let coordinate: CLLocationCoordinate2D
-    let type: String
-    let reportDescription: String
+    let report: Report
     
-    // Requerido por MKAnnotation
-    var title: String? { type }
-    var subtitle: String? { reportDescription }
+    var title: String? { report.type.title }
+    var subtitle: String? { report.description }
     
-    init(coordinate: CLLocationCoordinate2D, type: String, description: String) {
-        self.coordinate = coordinate
-        self.type = type
-        self.reportDescription = description
+    init(report: Report) {
+        self.report = report
+        self.coordinate = report.coordinate ?? CLLocationCoordinate2D()
         super.init()
     }
 } 

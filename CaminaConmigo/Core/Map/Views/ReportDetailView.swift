@@ -122,7 +122,7 @@ struct ReportDetailView: View {
             ImagePicker(image: $selectedImage)  // Muestra el selector de imágenes cuando está activo.
         }
         .sheet(isPresented: $showMapPicker) {
-            MapPickerView(viewModel: viewModel) // Muestra el selector de mapa cuando está activo.
+            MapPickerView(selectedLocation: $viewModel.selectedLocation, viewModel: viewModel)
         }
     }
 }

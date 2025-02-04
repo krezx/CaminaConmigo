@@ -14,6 +14,7 @@
 		00CFEC152D48294000A50B2E /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC142D48294000A50B2E /* FirebaseDatabase */; };
 		00CFEC172D48294000A50B2E /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC162D48294000A50B2E /* FirebaseFirestore */; };
 		00CFEC192D48294000A50B2E /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC182D48294000A50B2E /* FirebaseStorage */; };
+		00E7436B2D519741007A5350 /* FirebaseDynamicLinks in Frameworks */ = {isa = PBXBuildFile; productRef = 00E7436A2D519741007A5350 /* FirebaseDynamicLinks */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 				00CFEC152D48294000A50B2E /* FirebaseDatabase in Frameworks */,
 				00CFEB392D47F55700A50B2E /* FirebaseCore in Frameworks */,
 				00CFEC062D481B3700A50B2E /* FirebaseAuth in Frameworks */,
+				00E7436B2D519741007A5350 /* FirebaseDynamicLinks in Frameworks */,
 				00CFEC092D481D8900A50B2E /* GoogleSignIn in Frameworks */,
 				00CFEC192D48294000A50B2E /* FirebaseStorage in Frameworks */,
 				00CFEC0B2D481D8900A50B2E /* GoogleSignInSwift in Frameworks */,
@@ -102,6 +104,7 @@
 				00CFEC142D48294000A50B2E /* FirebaseDatabase */,
 				00CFEC162D48294000A50B2E /* FirebaseFirestore */,
 				00CFEC182D48294000A50B2E /* FirebaseStorage */,
+				00E7436A2D519741007A5350 /* FirebaseDynamicLinks */,
 			);
 			productName = CaminaConmigo;
 			productReference = 00CFEB1C2D47F03B00A50B2E /* CaminaConmigo.app */;
@@ -428,6 +431,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		00E7436A2D519741007A5350 /* FirebaseDynamicLinks */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDynamicLinks;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

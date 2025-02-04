@@ -12,21 +12,20 @@ import MapKit
 /// Vista principal del mapa donde el usuario puede interactuar con el mapa, buscar ubicaciones,
 /// y enviar reportes a través de un formulario. Incluye botones de emergencia y acciones interactivas.
 struct MapView: View {
-    @StateObject private var viewModel = MapViewModel()
-    @StateObject private var reportViewModel = ReportViewModel()
-    @StateObject private var shakeDetector = ShakeDetector()
+    @StateObject private var reportViewModel = ReportViewModel()  // El ViewModel que maneja la lógica de la vista del mapa.
     @State private var searchText = ""  // El texto de búsqueda para la ubicación.
     @StateObject private var locationManager = LocationManager()
     @State private var centerCoordinate: CLLocationCoordinate2D?
-    @State private var showEmergencyCall = false
+    @State private var selectedReport: ReportAnnotation?
 
     var body: some View {
         ZStack {
             // Vista del mapa representado en un contenedor que ocupa toda la pantalla.
             MapViewRepresentable(
-                locationManager: locationManager, 
+                locationManager: locationManager,
                 centerCoordinate: $centerCoordinate,
-                viewModel: reportViewModel
+                viewModel: reportViewModel,
+                selectedReport: $selectedReport
             )
             .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
 
@@ -64,17 +63,14 @@ struct MapView: View {
                             
                             // Botón SOS
                             Button(action: {
-                                showEmergencyCall = true
+                                // Acción del botón SOS (debería implementar alguna funcionalidad)
                             }) {
                                 Text("SOS")
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
                                     .frame(width: 44, height: 44)
-                                    .background(Color.red)
-                                    .clipShape(Circle())
-                            }
-                            .popover(isPresented: $showEmergencyCall, attachmentAnchor: .point(.top), arrowEdge: .bottom) {
-                                EmergencyCallView()
+                                    .background(Color.red)  // Fondo rojo para el botón SOS.
+                                    .clipShape(Circle())  // Hace el botón redondeado.
                             }
                             
                             // Botón para compartir (debe implementar funcionalidad)
@@ -129,13 +125,8 @@ struct MapView: View {
         .sheet(isPresented: $reportViewModel.showReportDetailSheet) {
             ReportDetailView(viewModel: reportViewModel)  // Vista para ingresar detalles del reporte.
         }
-        .onAppear {
-            shakeDetector.onShakeDetected = {
-                showEmergencyCall = true
-            }
-        }
-        .onDisappear {
-            shakeDetector.stopMonitoring()
+        .sheet(item: $selectedReport) { report in
+            ReportDetailPopupView(report: report, viewModel: reportViewModel)
         }
     }
 }

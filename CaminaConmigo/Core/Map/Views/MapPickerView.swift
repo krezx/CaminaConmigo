@@ -10,6 +10,7 @@ import SwiftUI
 import MapKit
 
 struct MapPickerView: View {
+    @Binding var selectedLocation: CLLocationCoordinate2D?
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: ReportViewModel
     @StateObject private var locationManager = LocationManager()
@@ -18,9 +19,10 @@ struct MapPickerView: View {
     var body: some View {
         ZStack {
             MapViewRepresentable(
-                locationManager: locationManager, 
+                locationManager: locationManager,
                 centerCoordinate: $centerCoordinate,
-                viewModel: viewModel
+                viewModel: viewModel,
+                selectedReport: .constant(nil)
             )
             VStack {
                Spacer()  // Empuja el mappin hacia el centro
@@ -31,8 +33,8 @@ struct MapPickerView: View {
                Button("Seleccionar esta ubicación") {
                    if let coordinate = centerCoordinate {
                        viewModel.selectedLocation = coordinate
-                       // Guardamos las coordenadas en el formato string en el location del reporte
-                       viewModel.currentReport?.location = "\(coordinate.latitude), \(coordinate.longitude)"
+                       // Actualizamos directamente las coordenadas del reporte
+                       viewModel.currentReport?.coordinate = coordinate
                    }
                    dismiss()
                }
