@@ -3,7 +3,7 @@ import SwiftUI
 struct AddFriendView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel = FriendsViewModel()
-    @State private var email = ""
+    @State private var searchText = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
     
@@ -14,24 +14,24 @@ struct AddFriendView: View {
                     .font(.title)
                     .padding(.top)
                 
-                Text("Ingresa el email de tu amigo para agregarlo")
+                Text("Ingresa el email o username de tu amigo")
                     .font(.subheadline)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
-                TextField("Email", text: $email)
+                TextField("Email o username", text: $searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .autocapitalization(.none)
-                    .keyboardType(.emailAddress)
+                    .autocorrectionDisabled()
                     .padding(.horizontal)
                 
-                Button(action: addFriend) {
+                Button(action: sendFriendRequest) {
                     if viewModel.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle())
                     } else {
-                        Text("Agregar Amigo")
+                        Text("Enviar Solicitud")
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                     }
@@ -41,7 +41,20 @@ struct AddFriendView: View {
                 .background(Color.blue)
                 .cornerRadius(10)
                 .padding(.horizontal)
-                .disabled(email.isEmpty || viewModel.isLoading)
+                .disabled(searchText.isEmpty || viewModel.isLoading)
+                
+                // Lista de solicitudes pendientes
+                if !viewModel.friendRequests.isEmpty {
+                    VStack(alignment: .leading) {
+                        Text("Solicitudes pendientes")
+                            .font(.headline)
+                            .padding(.horizontal)
+                        
+                        List(viewModel.friendRequests) { request in
+                            FriendRequestRow(request: request, viewModel: viewModel)
+                        }
+                    }
+                }
                 
                 Spacer()
             }
@@ -57,15 +70,57 @@ struct AddFriendView: View {
         }
     }
     
-    private func addFriend() {
+    private func sendFriendRequest() {
         Task {
             do {
-                try await viewModel.addFriend(email: email)
-                alertMessage = "Amigo agregado exitosamente"
+                try await viewModel.sendFriendRequest(searchText: searchText)
+                alertMessage = "Solicitud de amistad enviada exitosamente"
                 showAlert = true
             } catch {
                 alertMessage = "Error: \(error.localizedDescription)"
                 showAlert = true
+            }
+        }
+    }
+}
+
+struct FriendRequestRow: View {
+    let request: FriendRequest
+    let viewModel: FriendsViewModel
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(request.fromUserName)
+                    .font(.headline)
+                Text(request.fromUserEmail)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            HStack {
+                Button(action: { handleRequest(accept: true) }) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                }
+                
+                Button(action: { handleRequest(accept: false) }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private func handleRequest(accept: Bool) {
+        Task {
+            do {
+                try await viewModel.handleFriendRequest(request, accept: accept)
+            } catch {
+                print("Error handling friend request: \(error)")
             }
         }
     }
