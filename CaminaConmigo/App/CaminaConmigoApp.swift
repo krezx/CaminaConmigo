@@ -9,6 +9,7 @@ import SwiftUI
 import FirebaseCore
 import GoogleSignIn
 import FirebaseDynamicLinks
+import FirebaseMessaging
 
 // Clase para manejar la navegación global de la app
 class NavigationState: ObservableObject {
@@ -30,8 +31,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     /// - Returns: Un valor booleano que indica si la inicialización fue exitosa.
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        FirebaseApp.configure() // Configura Firebase al iniciar la aplicación.
-        return true // Indica que la aplicación se ha lanzado correctamente.
+        FirebaseApp.configure()
+        NotificationService.shared.requestAuthorization()
+        return true
     }
   
     /// Método que se llama cuando la aplicación recibe una URL.
@@ -91,6 +93,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 userInfo: ["reportId": reportId]
             )
         }
+    }
+    
+    func application(_ application: UIApplication,
+                    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
     }
 }
 
