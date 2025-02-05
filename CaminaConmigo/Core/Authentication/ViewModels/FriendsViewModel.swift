@@ -138,7 +138,7 @@ class FriendsViewModel: ObservableObject {
         let existingRequests = try await db.collection("friendRequests")
             .whereField("fromUserId", isEqualTo: currentUser.uid)
             .whereField("toUserId", isEqualTo: friendDoc.documentID)
-            .whereField("status", isEqualTo: "pending")
+            .whereField("status", isEqualTo: FriendRequest.RequestStatus.pending.rawValue)
             .getDocuments()
         
         if !existingRequests.documents.isEmpty {
