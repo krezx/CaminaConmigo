@@ -12,6 +12,7 @@ import SwiftUI
 struct MenuView: View {
     @EnvironmentObject var navigationState: NavigationState  // Estado de navegación global
     @EnvironmentObject var authViewModel: AuthenticationViewModel  // Vista de autenticación para manejar sesión.
+    @StateObject private var viewModel = MenuViewModel()
     
     // Propiedades de estado para controlar las transiciones de navegación.
     @State private var navigateToProfile = false
@@ -71,7 +72,9 @@ struct MenuView: View {
                     NavigationLink {
                         NotificationsView()
                     } label: {
-                        MenuItem(icon: "bell.circle", title: "Notificaciones")
+                        MenuItem(icon: "bell.circle", 
+                               title: "Notificaciones", 
+                               badgeCount: viewModel.pendingNotificationsCount)
                     }
                 }
                 .padding(.horizontal)
@@ -170,6 +173,7 @@ struct SectionHeader: View {
 struct MenuItem: View {
     let icon: String
     let title: String
+    var badgeCount: Int?
     
     var body: some View {
         HStack {
@@ -183,6 +187,17 @@ struct MenuItem: View {
                 .foregroundColor(.black)
             
             Spacer()
+            
+            if let count = badgeCount, count > 0 {
+                Text("\(count)")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.red)
+                    .clipShape(Capsule())
+                    .padding(.trailing, 4)
+            }
             
             Image(systemName: "chevron.right")  // Indicador de navegación.
                 .foregroundColor(.gray)

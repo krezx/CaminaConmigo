@@ -156,6 +156,12 @@ class FriendsViewModel: ObservableObject {
             throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Este usuario ya es tu amigo"])
         }
         
+        // Obtener el perfil del usuario actual
+        let currentUserDoc = try await db.collection("users").document(currentUser.uid).getDocument()
+        guard let currentUserProfile = try? currentUserDoc.data(as: UserProfile.self) else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Error al obtener el perfil del usuario"])
+        }
+        
         // Crear la solicitud de amistad
         let friendRequest = FriendRequest(
             fromUserId: currentUser.uid,
@@ -167,9 +173,22 @@ class FriendsViewModel: ObservableObject {
         )
         
         // Guardar la solicitud en Firestore
-        try await db.collection("friendRequests")
+        let requestRef = db.collection("friendRequests").document()
+        try await requestRef.setData(try Firestore.Encoder().encode(friendRequest))
+        
+        // Crear y guardar la notificación
+        let notification = UserNotification.createFriendRequestNotification(
+            forUser: friendDoc.documentID,
+            fromUser: currentUserProfile,
+            requestId: requestRef.documentID
+        )
+        
+        // Guardar la notificación en la colección de notificaciones del usuario destinatario
+        try await db.collection("users")
+            .document(friendDoc.documentID)
+            .collection("notifications")
             .document()
-            .setData(try Firestore.Encoder().encode(friendRequest))
+            .setData(try Firestore.Encoder().encode(notification))
     }
     
     func loadFriendRequests() {
@@ -203,6 +222,24 @@ class FriendsViewModel: ObservableObject {
         if accept {
             // Si se acepta, agregar a ambos usuarios como amigos
             try await addFriendship(userId1: request.fromUserId, userId2: request.toUserId)
+            
+            // Obtener el perfil del usuario que acepta
+            let currentUserDoc = try await db.collection("users").document(Auth.auth().currentUser?.uid ?? "").getDocument()
+            guard let currentUserProfile = try? currentUserDoc.data(as: UserProfile.self) else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Error al obtener el perfil del usuario"])
+            }
+            
+            // Crear y guardar la notificación de aceptación
+            let notification = UserNotification.createFriendRequestAcceptedNotification(
+                forUser: request.fromUserId,
+                fromUser: currentUserProfile
+            )
+            
+            try await db.collection("users")
+                .document(request.fromUserId)
+                .collection("notifications")
+                .document()
+                .setData(try Firestore.Encoder().encode(notification))
         }
     }
     

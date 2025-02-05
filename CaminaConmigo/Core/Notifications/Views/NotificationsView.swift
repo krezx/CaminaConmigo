@@ -12,39 +12,39 @@ import SwiftUI
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss  // Permite cerrar la vista de notificaciones.
     @StateObject private var viewModel = NotificationsViewModel()
+    @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var showAlert = false
     @State private var alertMessage = ""
     
     var body: some View {
         VStack {
-            // Barra superior con un botón para cerrar la vista y el título de "Notificaciones".
+            // Barra superior
             HStack {
                 Button(action: {
-                    dismiss()  // Cierra la vista cuando se presiona el botón.
+                    dismiss()
                 }) {
-                    Image(systemName: "arrow.left")  // Icono de flecha para regresar.
+                    Image(systemName: "arrow.left")
                         .foregroundColor(.black)
                         .font(.title2)
                 }
                 Spacer()
-                Text("Notificaciones")  // Título de la vista.
+                Text("Notificaciones")
                     .font(.title)
                     .bold()
                     .padding(.vertical, 5)
                 Spacer()
             }
-            .frame(maxWidth:  .infinity)
-            .background(Color.white)  // Fondo blanco para la barra superior.
-            .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)  // Sombra para darle profundidad a la barra superior.
+            .padding(.horizontal)
+            .background(Color.white)
+            .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
             
-            // Contenido principal
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    // Sección de solicitudes de amistad
+                    // Sección de solicitudes de amistad pendientes
                     if !viewModel.friendRequests.isEmpty {
                         Section {
                             ForEach(viewModel.friendRequests) { request in
-                                FriendRequestNotificationRow(request: request, viewModel: viewModel)
+                                FriendRequestRow(request: request, viewModel: friendsViewModel)
                                     .padding(.horizontal)
                                     .padding(.vertical, 8)
                             }
@@ -54,6 +54,22 @@ struct NotificationsView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding()
                                 .background(Color.gray.opacity(0.1))
+                        }
+                    }
+                    
+                    // Sección de notificaciones generales
+                    if !viewModel.notifications.isEmpty {
+                        Section {
+                            ForEach(viewModel.notifications) { notification in
+                                NotificationRow(notification: notification, viewModel: viewModel)
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 8)
+                                    .onAppear {
+                                        if !notification.isRead {
+                                            viewModel.markNotificationAsRead(notification)
+                                        }
+                                    }
+                            }
                         }
                     }
                 }
@@ -71,7 +87,7 @@ struct NotificationsView: View {
 
 struct FriendRequestNotificationRow: View {
     let request: FriendRequest
-    let viewModel: NotificationsViewModel
+    let viewModel: FriendsViewModel
     @State private var isLoading = false
     @State private var showError = false
     @State private var errorMessage = ""
@@ -140,9 +156,48 @@ struct FriendRequestNotificationRow: View {
     }
 }
 
-/// Vista previa para previsualizar la vista de notificaciones en el canvas de Xcode.
-struct NotificationsView_Previews: PreviewProvider {
-    static var previews: some View {
-        NotificationsView()  // Previsualización de la vista de notificaciones.
+struct NotificationRow: View {
+    let notification: UserNotification
+    let viewModel: NotificationsViewModel
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(notification.isRead ? Color.gray.opacity(0.2) : Color.blue.opacity(0.2))
+                .frame(width: 50, height: 50)
+                .overlay(
+                    Image(systemName: iconForType(notification.type))
+                        .foregroundColor(notification.isRead ? .gray : .blue)
+                )
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(notification.title)
+                    .font(.headline)
+                    .foregroundColor(notification.isRead ? .gray : .primary)
+                Text(notification.message)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+        }
+        .opacity(notification.isRead ? 0.8 : 1)
+    }
+    
+    private func iconForType(_ type: UserNotification.NotificationType) -> String {
+        switch type {
+        case .friendRequest:
+            return "person.crop.circle.badge.plus"
+        case .friendRequestAccepted:
+            return "person.2.circle.fill"
+        case .emergencyAlert:
+            return "exclamationmark.triangle.fill"
+        case .newReport:
+            return "doc.text.fill"
+        case .reportComment:
+            return "text.bubble.fill"
+        case .groupInvite:
+            return "person.3.fill"
+        }
     }
 }
