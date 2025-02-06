@@ -56,27 +56,27 @@ struct ChatDetailView: View {
 
 /// Vista que representa el encabezado del chat, que incluye el nombre del chat y un botón para volver atrás.
 struct ChatHeader: View {
-    let chat: Chat // El chat para el cual se muestra el encabezado.
+    let chat: Chat
     let presentationMode: Binding<PresentationMode>
+    @StateObject private var viewModel = ChatViewModel()
+    @State private var showNicknameDialog = false
+    @State private var newNickname = ""
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     var body: some View {
         HStack(spacing: 12) {
-            // Botón para volver a la vista anterior
             Button(action: {
-                presentationMode.wrappedValue.dismiss() // Desvanece la vista de detalle del chat y regresa a la vista anterior.
+                presentationMode.wrappedValue.dismiss()
             }) {
-                Image(systemName: "arrow.left") // Icono de flecha hacia la izquierda
+                Image(systemName: "arrow.left")
                     .foregroundColor(Color.black)
             }
             
-            // Imagen de perfil del chat (simulada aquí con un círculo gris)
             Circle()
                 .fill(Color.gray.opacity(0.3))
                 .frame(width: 40, height: 40)
             
-            Spacer()
-            
-            // Nombre del chat
             Text(chat.name)
                 .lineLimit(1)
                 .font(.title)
@@ -85,26 +85,74 @@ struct ChatHeader: View {
             
             Spacer()
             
-            // Íconos de ubicación y ondas de interacción
+            // Íconos de ubicación y ondas
             VStack {
                 ZStack {
-                    // Icono de ubicación
                     Image(systemName: "location")
                         .font(.caption)
-                    // Onda izquierda
                     Image(systemName: "wave.3.left")
-                        .font(.caption) // Más pequeño
+                        .font(.caption)
                         .offset(x: -12, y: 0)
-                    // Onda derecha
                     Image(systemName: "wave.3.right")
-                        .font(.caption) // Más pequeño
+                        .font(.caption)
                         .offset(x: 12, y: 0)
                 }
             }
-            .padding()
+            .padding(.trailing, 8)
+            
+            // Menú de opciones
+            Menu {
+                Button(action: {
+                    showNicknameDialog = true
+                }) {
+                    Label("Cambiar apodo", systemImage: "pencil")
+                }
+                
+                Button(action: {
+                    // Acción para eliminar chat (por implementar)
+                }) {
+                    Label("Eliminar chat", systemImage: "trash")
+                        .foregroundColor(.red)
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 22))
+                    .foregroundColor(.black)
+            }
         }
+        .padding(.horizontal)
         .background(Color.white)
-        .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2) // Sombra para dar profundidad al encabezado.
+        .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
+        .alert("Cambiar apodo", isPresented: $showNicknameDialog) {
+            TextField("Nuevo apodo", text: $newNickname)
+            
+            Button("Cancelar", role: .cancel) {
+                newNickname = ""
+            }
+            
+            Button("Guardar") {
+                if !newNickname.isEmpty {
+                    // Obtener el ID del otro usuario
+                    if let otherUserId = chat.participants.first(where: { $0 != Auth.auth().currentUser?.uid }) {
+                        Task {
+                            do {
+                                try await viewModel.updateNickname(in: chat.id, for: otherUserId, newNickname: newNickname)
+                                alertMessage = "Apodo actualizado con éxito"
+                            } catch {
+                                alertMessage = "Error al actualizar el apodo: \(error.localizedDescription)"
+                            }
+                            showAlert = true
+                            newNickname = ""
+                        }
+                    }
+                }
+            }
+        }
+        .alert("Mensaje", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
+        }
     }
 }
 

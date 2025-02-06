@@ -9,13 +9,15 @@ struct Chat: Identifiable {
     let lastMessage: String
     let timeString: String
     let lastMessageTimestamp: Date
+    let nicknames: [String: String]  // Diccionario de apodos por usuario
     
     var dictionary: [String: Any] {
         return [
             "participants": participants,
             "name": name,
             "lastMessage": lastMessage,
-            "lastMessageTimestamp": Timestamp(date: lastMessageTimestamp)
+            "lastMessageTimestamp": Timestamp(date: lastMessageTimestamp),
+            "nicknames": nicknames
         ]
     }
 }
@@ -49,9 +51,12 @@ extension Chat {
             return nil
         }
         
+        let nicknames = data["nicknames"] as? [String: String] ?? [:]
+        
         // Obtener el nombre del otro participante
         let otherUserId = participants.first { $0 != currentUserId } ?? ""
-        let name = userNames[otherUserId] ?? "Usuario"
+        // Usar el apodo si existe, si no, usar el nombre de usuario
+        let name = nicknames[otherUserId] ?? userNames[otherUserId] ?? "Usuario"
         
         return Chat(
             id: document.documentID,
@@ -59,7 +64,8 @@ extension Chat {
             name: name,
             lastMessage: lastMessage,
             timeString: DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: timestamp
+            lastMessageTimestamp: timestamp,
+            nicknames: nicknames
         )
     }
 }

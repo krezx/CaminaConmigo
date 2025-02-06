@@ -226,7 +226,8 @@ class FriendsViewModel: ObservableObject {
             name: user2Profile.username,
             lastMessage: "¡Hola! Ahora somos amigos",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date()
+            lastMessageTimestamp: Date(),
+            nicknames: [:]
         )
         
         // Chat para usuario 2
@@ -236,7 +237,8 @@ class FriendsViewModel: ObservableObject {
             name: user1Profile.username,
             lastMessage: "¡Hola! Ahora somos amigos",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date()
+            lastMessageTimestamp: Date(),
+            nicknames: [:]
         )
         
         // Guardar el chat en la colección de chats
@@ -247,7 +249,8 @@ class FriendsViewModel: ObservableObject {
             "userNames": [
                 userId1: user1Profile.username,
                 userId2: user2Profile.username
-            ]
+            ],
+            "nicknames": [:] // Inicializar el diccionario de apodos vacío
         ])
     }
 } 
