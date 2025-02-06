@@ -78,6 +78,7 @@ struct ChatHeader: View {
             
             // Nombre del chat
             Text(chat.name)
+                .lineLimit(1)
                 .font(.title)
                 .bold()
                 .padding(.vertical, 5)

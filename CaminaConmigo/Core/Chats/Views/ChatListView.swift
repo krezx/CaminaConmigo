@@ -121,26 +121,30 @@ struct ChatListView: View {
 /// Vista que representa los botones en el encabezado de la lista de chats. Los botones permiten añadir amigos o crear grupos.
 struct ChatHeaderButtons: View {
     @Binding var showAddFriend: Bool
+    @State private var showCreateGroup = false
     
     var body: some View {
         HStack(spacing: 15) {
             // Botón para añadir un amigo
             Button(action: { showAddFriend = true }) {
                 HStack {
-                    Image(systemName: "person.badge.plus") // Icono de añadir amigo
+                    Image(systemName: "person.badge.plus")
                     Text("Añadir Amigo")
                 }
             }
             
             // Botón para crear un grupo
-            Button(action: {}) {
+            Button(action: { showCreateGroup = true }) {
                 HStack {
-                    Image(systemName: "person.3") // Icono de grupo
+                    Image(systemName: "person.3")
                     Text("Crear Grupo")
                 }
             }
         }
-        .padding(.vertical, 15) // Añade espacio vertical entre los botones
+        .padding(.vertical, 15)
+        .sheet(isPresented: $showCreateGroup) {
+            CreateGroupView()
+        }
     }
 }
 

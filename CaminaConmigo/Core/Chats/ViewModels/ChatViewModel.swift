@@ -121,6 +121,28 @@ class ChatViewModel: ObservableObject {
             }
     }
     
+    func createGroupChat(name: String, participants: [String], completion: @escaping (Bool) -> Void) {
+        let chat = Chat(
+            id: UUID().uuidString,
+            participants: participants,
+            name: name,
+            lastMessage: "Grupo creado",
+            timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
+            lastMessageTimestamp: Date()
+        )
+        
+        db.collection("chats")
+            .document(chat.id)
+            .setData(chat.dictionary) { [weak self] error in
+                if let error = error {
+                    self?.error = error.localizedDescription
+                    completion(false)
+                } else {
+                    completion(true)
+                }
+            }
+    }
+    
     private func markMessagesAsRead(messages: [Message], in chatId: String) {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
         
