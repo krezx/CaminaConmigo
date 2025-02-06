@@ -46,22 +46,28 @@ extension Chat {
         guard let participants = data["participants"] as? [String],
               let lastMessage = data["lastMessage"] as? String,
               let timestamp = (data["lastMessageTimestamp"] as? Timestamp)?.dateValue(),
-              let userNames = data["userNames"] as? [String: String],
               let currentUserId = Auth.auth().currentUser?.uid else {
             return nil
         }
         
         let nicknames = data["nicknames"] as? [String: String] ?? [:]
+        let userNames = data["userNames"] as? [String: String] ?? [:]
         
-        // Obtener el nombre del otro participante
-        let otherUserId = participants.first { $0 != currentUserId } ?? ""
-        // Usar el apodo si existe, si no, usar el nombre de usuario
-        let name = nicknames[otherUserId] ?? userNames[otherUserId] ?? "Usuario"
+        // Si hay un nombre de grupo explícito, usarlo
+        var name = data["name"] as? String
+        
+        // Si no hay nombre de grupo (chat individual), usar el nombre del otro participante
+        if name == nil && participants.count == 2 {
+            let otherUserId = participants.first { $0 != currentUserId } ?? ""
+            name = nicknames[otherUserId] ?? userNames[otherUserId] ?? "Usuario"
+        } else if name == nil {
+            name = "Grupo sin nombre"
+        }
         
         return Chat(
             id: document.documentID,
             participants: participants,
-            name: name,
+            name: name!,
             lastMessage: lastMessage,
             timeString: DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .short),
             lastMessageTimestamp: timestamp,
