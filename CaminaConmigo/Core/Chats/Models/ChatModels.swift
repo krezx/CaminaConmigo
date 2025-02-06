@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseFirestore
+import FirebaseAuth
 
 struct Chat: Identifiable {
     let id: String
@@ -41,11 +42,16 @@ extension Chat {
         let data = document.data()
         
         guard let participants = data["participants"] as? [String],
-              let name = data["name"] as? String,
               let lastMessage = data["lastMessage"] as? String,
-              let timestamp = (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() else {
+              let timestamp = (data["lastMessageTimestamp"] as? Timestamp)?.dateValue(),
+              let userNames = data["userNames"] as? [String: String],
+              let currentUserId = Auth.auth().currentUser?.uid else {
             return nil
         }
+        
+        // Obtener el nombre del otro participante
+        let otherUserId = participants.first { $0 != currentUserId } ?? ""
+        let name = userNames[otherUserId] ?? "Usuario"
         
         return Chat(
             id: document.documentID,

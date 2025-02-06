@@ -65,28 +65,6 @@ struct ChatListView: View {
                                 }
                             }
                             
-                            // Amigos sin chat
-                            if !friendsWithoutChat.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Amigos")
-                                        .font(.headline)
-                                        .padding(.horizontal)
-                                        .padding(.top)
-                                    
-                                    LazyVStack(spacing: 0) {
-                                        ForEach(friendsWithoutChat) { friend in
-                                            Button(action: {
-                                                viewModel.createNewChat(with: friend.id, name: friend.name)
-                                            }) {
-                                                FriendRowView(friend: friend)
-                                                    .padding(.horizontal)
-                                            }
-                                            Divider()
-                                        }
-                                    }
-                                }
-                            }
-                            
                             if viewModel.chats.isEmpty && friendsWithoutChat.isEmpty {
                                 Text("No tienes chats activos ni amigos agregados")
                                     .foregroundColor(.gray)
@@ -182,33 +160,5 @@ struct ChatRowView: View {
             .padding(.vertical, 8) // Añade espacio vertical a la fila
         }
         .buttonStyle(PlainButtonStyle()) // Estilo plano para el botón de la fila (sin cambios visuales)
-    }
-}
-
-struct FriendRowView: View {
-    let friend: UserProfile
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 50, height: 50)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(friend.name)
-                    .font(.system(size: 16, weight: .medium))
-                
-                Text("Toca para iniciar una conversación")
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            Image(systemName: "message")
-                .foregroundColor(.blue)
-        }
-        .padding(.vertical, 8)
     }
 }

@@ -244,6 +244,15 @@ class FriendsViewModel: ObservableObject {
     }
     
     private func addFriendship(userId1: String, userId2: String) async throws {
+        // Obtener los perfiles de ambos usuarios
+        let user1Doc = try await db.collection("users").document(userId1).getDocument()
+        let user2Doc = try await db.collection("users").document(userId2).getDocument()
+        
+        guard let user1Profile = try? user1Doc.data(as: UserProfile.self),
+              let user2Profile = try? user2Doc.data(as: UserProfile.self) else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Error al obtener perfiles de usuarios"])
+        }
+        
         // Agregar amigo para el usuario 1
         try await db.collection("users").document(userId1)
             .collection("friends")
@@ -255,5 +264,39 @@ class FriendsViewModel: ObservableObject {
             .collection("friends")
             .document(userId1)
             .setData(["addedAt": FieldValue.serverTimestamp()])
+        
+        // Crear chat para ambos usuarios
+        let chatId = UUID().uuidString
+        
+        // Chat para usuario 1
+        let chat1 = Chat(
+            id: chatId,
+            participants: [userId1, userId2],
+            name: user2Profile.username,
+            lastMessage: "¡Hola! Ahora somos amigos",
+            timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
+            lastMessageTimestamp: Date()
+        )
+        
+        // Chat para usuario 2
+        let chat2 = Chat(
+            id: chatId,
+            participants: [userId1, userId2],
+            name: user1Profile.username,
+            lastMessage: "¡Hola! Ahora somos amigos",
+            timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
+            lastMessageTimestamp: Date()
+        )
+        
+        // Guardar el chat en la colección de chats
+        try await db.collection("chats").document(chatId).setData([
+            "participants": [userId1, userId2],
+            "lastMessage": "¡Hola! Ahora somos amigos",
+            "lastMessageTimestamp": Timestamp(date: Date()),
+            "userNames": [
+                userId1: user1Profile.username,
+                userId2: user2Profile.username
+            ]
+        ])
     }
 } 
