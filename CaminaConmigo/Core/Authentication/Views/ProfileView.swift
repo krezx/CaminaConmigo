@@ -135,9 +135,14 @@ struct ProfileView: View {
             }
             .alert("Editar nombre de usuario", isPresented: $showEditUsername) {
                 TextField("Nombre de usuario", text: $tempUsername)
-                Button("Cancelar", role: .cancel) {}
+                Button("Cancelar", role: .cancel) {
+                    tempUsername = ""
+                }
                 Button("Guardar") {
-                    viewModel.updateUsername(tempUsername)
+                    Task {
+                        await viewModel.updateUsername(tempUsername)
+                        tempUsername = ""
+                    }
                 }
             }
             .alert("Error", isPresented: .constant(viewModel.error != nil)) {

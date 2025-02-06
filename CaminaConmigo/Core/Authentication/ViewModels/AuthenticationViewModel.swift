@@ -58,15 +58,19 @@ class AuthenticationViewModel: ObservableObject {
             let authResult = try await Auth.auth().signIn(with: credential)
             self.userSession = authResult.user // Establece la sesión del usuario en Firebase.
             
-            // Crear o actualizar el perfil del usuario
-            let userProfile = UserProfile(
-                id: authResult.user.uid,
-                name: authResult.user.displayName ?? "",
-                email: authResult.user.email ?? ""
-            )
+            // Verificar si el usuario ya existe en Firestore
+            let userDoc = try await db.collection("users").document(authResult.user.uid).getDocument()
             
-            // Guardar el perfil en Firestore
-            try await db.collection("users").document(authResult.user.uid).setData(from: userProfile)
+            if !userDoc.exists {
+                // Solo crear nuevo perfil si el usuario no existe
+                let userProfile = UserProfile(
+                    id: authResult.user.uid,
+                    name: authResult.user.displayName ?? "",
+                    email: authResult.user.email ?? ""
+                )
+                
+                try await db.collection("users").document(authResult.user.uid).setData(from: userProfile)
+            }
             
         } catch {
             throw AuthError.signInError // Lanza un error si ocurre un fallo durante el proceso de inicio de sesión.

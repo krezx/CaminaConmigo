@@ -62,11 +62,34 @@ class ProfileViewModel: ObservableObject {
     }
     
     /// Método para actualizar el nombre de usuario en el perfil.
-    func updateUsername(_ newUsername: String) {
+    func updateUsername(_ newUsername: String) async {
         guard var profile = userProfile else { return }
-        profile.username = newUsername
-        userProfile = profile
-        saveProfile() // Guarda los cambios en el perfil.
+        
+        do {
+            // Validar formato del username
+            let validation = isUsernameValid(newUsername)
+            if !validation.isValid {
+                self.error = validation.message
+                return
+            }
+            
+            // Verificar si el username ya está en uso (excepto si es el mismo usuario)
+            if profile.username != newUsername {
+                let isAvailable = try await checkUsernameAvailability(newUsername)
+                if !isAvailable {
+                    self.error = "Este nombre de usuario ya está en uso"
+                    return
+                }
+            }
+            
+            // Actualizar el username
+            profile.username = newUsername
+            userProfile = profile
+            try await saveProfileAsync()
+            
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
     
     /// Método para actualizar el tipo de perfil en el perfil.
@@ -129,5 +152,35 @@ class ProfileViewModel: ObservableObject {
         } catch {
             self.error = error.localizedDescription // Almacena el error si ocurre.
         }
+    }
+    
+    private func saveProfileAsync() async throws {
+        guard let userId = Auth.auth().currentUser?.uid,
+              let profile = userProfile else { return }
+        
+        try await db.collection("users").document(userId).setData(from: profile)
+    }
+    
+    func isUsernameValid(_ username: String) -> (isValid: Bool, message: String) {
+        // Verificar espacios en blanco
+        if username.contains(" ") {
+            return (false, "El nombre de usuario no puede contener espacios")
+        }
+        
+        // Verificar longitud mínima
+        if username.count < 3 {
+            return (false, "El nombre de usuario debe tener al menos 3 caracteres")
+        }
+        
+        return (true, "")
+    }
+    
+    func checkUsernameAvailability(_ username: String) async throws -> Bool {
+        let snapshot = try await db.collection("users")
+            .whereField("username", isEqualTo: username)
+            .getDocuments()
+        
+        // Si no hay documentos, el username está disponible
+        return snapshot.documents.isEmpty
     }
 }
