@@ -62,55 +62,6 @@ class FriendsViewModel: ObservableObject {
             }
     }
     
-    func addFriend(email: String) async throws {
-        guard let currentUserId = Auth.auth().currentUser?.uid else {
-            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No hay usuario autenticado"])
-        }
-        
-        isLoading = true
-        defer { isLoading = false }
-        
-        // Buscar usuario por email
-        let snapshot = try await db.collection("users")
-            .whereField("email", isEqualTo: email)
-            .getDocuments()
-        
-        guard let friendDoc = snapshot.documents.first,
-              friendDoc.documentID != currentUserId else {
-            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no encontrado o es tu propio email"])
-        }
-        
-        // Agregar amigo a la colección de amigos del usuario actual
-        try await db.collection("users").document(currentUserId)
-            .collection("friends")
-            .document(friendDoc.documentID)
-            .setData(["addedAt": FieldValue.serverTimestamp()])
-        
-        // Agregar al usuario actual como amigo del otro usuario
-        try await db.collection("users").document(friendDoc.documentID)
-            .collection("friends")
-            .document(currentUserId)
-            .setData(["addedAt": FieldValue.serverTimestamp()])
-    }
-    
-    func removeFriend(friendId: String) async throws {
-        guard let currentUserId = Auth.auth().currentUser?.uid else {
-            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No hay usuario autenticado"])
-        }
-        
-        // Eliminar amigo de la colección de amigos del usuario actual
-        try await db.collection("users").document(currentUserId)
-            .collection("friends")
-            .document(friendId)
-            .delete()
-        
-        // Eliminar al usuario actual de la colección de amigos del otro usuario
-        try await db.collection("users").document(friendId)
-            .collection("friends")
-            .document(currentUserId)
-            .delete()
-    }
-    
     func sendFriendRequest(searchText: String) async throws {
         guard let currentUser = Auth.auth().currentUser else {
             throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No hay usuario autenticado"])
