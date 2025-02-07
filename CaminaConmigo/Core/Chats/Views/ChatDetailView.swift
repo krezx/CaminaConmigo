@@ -25,7 +25,7 @@ struct ChatDetailView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     ForEach(viewModel.messages) { message in
-                        MessageBubble(message: message)
+                        MessageBubble(message: message, chat: chat)
                     }
                 }
                 .padding()
@@ -199,33 +199,69 @@ struct ChatHeader: View {
 
 /// Vista que representa una burbuja de mensaje, que muestra el contenido del mensaje y su estilo según el emisor.
 struct MessageBubble: View {
-    let message: Message // El mensaje que se va a mostrar.
+    let message: Message
+    let chat: Chat // Añadimos referencia al chat
+    @StateObject private var friendsViewModel = FriendsViewModel()
+    @State private var senderName: String = ""
     
     private var isFromCurrentUser: Bool {
         message.senderId == Auth.auth().currentUser?.uid
     }
     
     var body: some View {
-        HStack {
-            if isFromCurrentUser {
-                Spacer() // Añade espacio si el mensaje es del usuario actual.
-            }
-
-            VStack(alignment: isFromCurrentUser ? .trailing : .leading) {
-                Text(message.content)
-                    .padding(12)
-                    .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5)) // El color de la burbuja depende de si el mensaje es del usuario actual.
-                    .foregroundColor(isFromCurrentUser ? .white : .black) // El color del texto depende de si es del usuario actual.
-                    .cornerRadius(16)
-                
-                Text(DateFormatter.localizedString(from: message.timestamp, dateStyle: .none, timeStyle: .short))
-                    .font(.caption2)
+        VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
+            // Mostrar el nombre del remitente solo si:
+            // 1. Es un chat grupal (más de 2 participantes)
+            // 2. No es un mensaje propio
+            if chat.participants.count > 2 && !isFromCurrentUser {
+                Text(senderName)
+                    .font(.caption)
                     .foregroundColor(.gray)
+                    .padding(.horizontal, 4)
             }
             
-            if !isFromCurrentUser {
-                Spacer() // Añade espacio si el mensaje no es del usuario actual.
-            }
+            Text(message.content)
+                .padding(12)
+                .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
+                .foregroundColor(isFromCurrentUser ? .white : .black)
+                .cornerRadius(16)
+            
+            Text(DateFormatter.localizedString(from: message.timestamp, dateStyle: .none, timeStyle: .short))
+                .font(.caption2)
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, alignment: isFromCurrentUser ? .trailing : .leading)
+        .onAppear {
+            loadSenderName()
+        }
+    }
+    
+    private func loadSenderName() {
+        guard !isFromCurrentUser && chat.participants.count > 2 else { return }
+        
+        // Primero intentamos obtener el nickname si es un amigo
+        if let currentUserId = Auth.auth().currentUser?.uid {
+            let db = Firestore.firestore()
+            
+            // Verificar si el remitente es amigo y obtener su nickname
+            db.collection("users")
+                .document(currentUserId)
+                .collection("friends")
+                .document(message.senderId)
+                .getDocument { snapshot, error in
+                    if let nickname = snapshot?.data()?["nickname"] as? String {
+                        self.senderName = nickname
+                    } else {
+                        // Si no es amigo o no tiene nickname, obtener el username
+                        db.collection("users")
+                            .document(message.senderId)
+                            .getDocument { snapshot, error in
+                                if let username = snapshot?.data()?["username"] as? String {
+                                    self.senderName = username
+                                }
+                            }
+                    }
+                }
         }
     }
 }
