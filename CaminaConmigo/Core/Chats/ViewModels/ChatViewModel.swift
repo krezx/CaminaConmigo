@@ -170,8 +170,6 @@ class ChatViewModel: ObservableObject {
     }
     
     func updateNickname(in chatId: String, for userId: String, newNickname: String) async throws {
-        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
-        
         // Obtener el documento del chat actual
         let chatDoc = try await db.collection("chats").document(chatId).getDocument()
         var nicknames = (chatDoc.data()?["nicknames"] as? [String: String]) ?? [:]

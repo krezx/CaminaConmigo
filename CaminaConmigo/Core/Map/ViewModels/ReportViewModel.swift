@@ -47,8 +47,7 @@ class ReportViewModel: ObservableObject {
     }
     
     func fetchReports() {
-        db.collection("reportes").addSnapshotListener { [weak self] querySnapshot, error in
-            guard let self = self else { return }
+        db.collection("reportes").addSnapshotListener { querySnapshot, error in
             guard let documents = querySnapshot?.documents else {
                 print("Error fetching reports: \(error?.localizedDescription ?? "Unknown error")")
                 return
@@ -163,9 +162,7 @@ class ReportViewModel: ObservableObject {
         db.collection("reportes").document(reportId)
             .collection("comentarios")
             .order(by: "timestamp", descending: true)
-            .addSnapshotListener { [weak self] querySnapshot, error in
-                guard let self = self else { return }
-                
+            .addSnapshotListener { querySnapshot, error in
                 if let error = error {
                     print("Error fetching comments: \(error.localizedDescription)")
                     self.isLoadingComments = false
@@ -212,7 +209,7 @@ class ReportViewModel: ObservableObject {
         
         db.collection("reportes").document(reportId)
             .collection("comentarios")
-            .addDocument(data: commentData) { [weak self] error in
+            .addDocument(data: commentData) { error in
                 if let error = error {
                     print("Error adding comment: \(error.localizedDescription)")
                 }
@@ -224,7 +221,7 @@ class ReportViewModel: ObservableObject {
         db.collection("reportes").document(reportId)
             .collection("comentarios")
             .document(commentId)
-            .delete { [weak self] error in
+            .delete { error in
                 if let error = error {
                     print("Error deleting comment: \(error.localizedDescription)")
                 }
@@ -236,7 +233,7 @@ class ReportViewModel: ObservableObject {
         let reportRef = db.collection("reportes").document(reportId)
         let likesRef = reportRef.collection("likes")
         
-        likesRef.document(userId).getDocument { [weak self] snapshot, error in
+        likesRef.document(userId).getDocument { snapshot, error in
             if let error = error {
                 print("Error checking like status: \(error.localizedDescription)")
                 return

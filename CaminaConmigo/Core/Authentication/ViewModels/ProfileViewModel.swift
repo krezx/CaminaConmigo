@@ -158,7 +158,7 @@ class ProfileViewModel: ObservableObject {
         guard let userId = Auth.auth().currentUser?.uid,
               let profile = userProfile else { return }
         
-        try await db.collection("users").document(userId).setData(from: profile)
+        try db.collection("users").document(userId).setData(from: profile)
     }
     
     func isUsernameValid(_ username: String) -> (isValid: Bool, message: String) {

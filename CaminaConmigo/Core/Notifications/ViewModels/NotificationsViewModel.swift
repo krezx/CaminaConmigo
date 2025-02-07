@@ -2,6 +2,7 @@ import Foundation
 import FirebaseFirestore
 import FirebaseAuth
 
+@MainActor
 class NotificationsViewModel: ObservableObject {
     @Published var notifications: [UserNotification] = []
     @Published var friendRequests: [FriendRequest] = []
@@ -32,16 +33,18 @@ class NotificationsViewModel: ObservableObject {
             .collection("notifications")
             .order(by: "createdAt", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    return
+                Task { @MainActor in
+                    guard let self = self else { return }
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        return
+                    }
+                    
+                    self.notifications = snapshot?.documents.compactMap { document in
+                        try? document.data(as: UserNotification.self)
+                    } ?? []
                 }
-                
-                self.notifications = snapshot?.documents.compactMap { document in
-                    try? document.data(as: UserNotification.self)
-                } ?? []
             }
     }
     
@@ -49,13 +52,14 @@ class NotificationsViewModel: ObservableObject {
         guard let notificationId = notification.id,
               let userId = Auth.auth().currentUser?.uid else { return }
         
-        Task {
+        Task { @MainActor in
             do {
+                let updateData: [String: Any] = ["isRead": true]
                 try await db.collection("users")
                     .document(userId)
                     .collection("notifications")
                     .document(notificationId)
-                    .updateData(["isRead": true])
+                    .updateData(updateData)
             } catch {
                 print("Error marking notification as read: \(error)")
             }
@@ -65,27 +69,28 @@ class NotificationsViewModel: ObservableObject {
     func markAllNotificationsAsRead() {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
-        Task {
+        Task { @MainActor in
             do {
                 let batch = db.batch()
                 
-                // Obtener todas las notificaciones no leídas
                 let unreadNotifications = try await db.collection("users")
                     .document(userId)
                     .collection("notifications")
                     .whereField("isRead", isEqualTo: false)
                     .getDocuments()
                 
-                // Marcar todas como leídas en un batch
-                for doc in unreadNotifications.documents {
-                    let ref = db.collection("users")
-                        .document(userId)
-                        .collection("notifications")
-                        .document(doc.documentID)
-                    batch.updateData(["isRead": true], forDocument: ref)
+                // Crear el diccionario de actualización dentro del contexto @MainActor
+                await MainActor.run {
+                    let updateData: [String: Any] = ["isRead": true]
+                    for doc in unreadNotifications.documents {
+                        let ref = db.collection("users")
+                            .document(userId)
+                            .collection("notifications")
+                            .document(doc.documentID)
+                        batch.updateData(updateData, forDocument: ref)
+                    }
                 }
                 
-                // Ejecutar el batch
                 try await batch.commit()
             } catch {
                 print("Error marking all notifications as read: \(error)")
@@ -101,14 +106,14 @@ class NotificationsViewModel: ObservableObject {
             .whereField("status", isEqualTo: FriendRequest.RequestStatus.pending.rawValue)
             .order(by: "createdAt", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    return
-                }
-                
-                DispatchQueue.main.async {
+                Task { @MainActor in
+                    guard let self = self else { return }
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        return
+                    }
+                    
                     self.friendRequests = snapshot?.documents.compactMap { document in
                         try? document.data(as: FriendRequest.self)
                     } ?? []
@@ -133,10 +138,13 @@ class NotificationsViewModel: ObservableObject {
         
         let status: FriendRequest.RequestStatus = accept ? .accepted : .rejected
         
+        // Crear el diccionario de actualización dentro del contexto @MainActor
+        let updateData: [String: String] = ["status": status.rawValue]
+        
         // Actualizar el estado de la solicitud
         try await db.collection("friendRequests")
             .document(requestId)
-            .updateData(["status": status.rawValue])
+            .updateData(updateData)
         
         if accept {
             // Si se acepta, agregar a ambos usuarios como amigos

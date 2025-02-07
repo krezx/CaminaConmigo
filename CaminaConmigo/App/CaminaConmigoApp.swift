@@ -8,7 +8,6 @@
 import SwiftUI
 import FirebaseCore
 import GoogleSignIn
-import FirebaseDynamicLinks
 import FirebaseMessaging
 
 // Clase para manejar la navegación global de la app
@@ -47,52 +46,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ app: UIApplication,
                     open url: URL,
                     options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        // Primero intentamos manejar la URL con Google Sign-In
-        if GIDSignIn.sharedInstance.handle(url) {
-            return true
-        }
-        
-        // Luego intentamos manejar el Dynamic Link
-        return handleIncomingDynamicLink(url)
-    }
-    
-    func application(_ application: UIApplication,
-                    continue userActivity: NSUserActivity,
-                    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-        // Manejar Universal Links
-        if let incomingURL = userActivity.webpageURL {
-            return handleIncomingDynamicLink(incomingURL)
-        }
-        return false
-    }
-    
-    private func handleIncomingDynamicLink(_ url: URL) -> Bool {
-        let handled = DynamicLinks.dynamicLinks().handleUniversalLink(url) { dynamicLink, error in
-            guard error == nil else {
-                print("Error al manejar Dynamic Link: \(error!.localizedDescription)")
-                return
-            }
-            
-            if let dynamicLink = dynamicLink {
-                self.handleDynamicLink(dynamicLink)
-            }
-        }
-        
-        return handled
-    }
-    
-    private func handleDynamicLink(_ dynamicLink: DynamicLink) {
-        guard let url = dynamicLink.url else { return }
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: true)
-        
-        // Extraer el ID del reporte de los parámetros de la URL
-        if let reportId = components?.queryItems?.first(where: { $0.name == "id" })?.value {
-            NotificationCenter.default.post(
-                name: Notification.Name("OpenReport"),
-                object: nil,
-                userInfo: ["reportId": reportId]
-            )
-        }
+        return GIDSignIn.sharedInstance.handle(url)
     }
     
     func application(_ application: UIApplication,
@@ -122,13 +76,6 @@ struct CaminaConmigoApp: App {
             .environmentObject(authViewModel) // Proporciona el ViewModel de autenticación al entorno.
             .environmentObject(navigationState) // Proporciona el estado de navegación al entorno.
             .preferredColorScheme(.light) // Establece el esquema de color preferido a claro.
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenReport"))) { notification in
-                if let reportId = notification.userInfo?["reportId"] as? String {
-                    navigationState.selectedTab = 0 // Cambiar a la pestaña del mapa
-                    navigationState.selectedReportId = reportId
-                    navigationState.shouldShowReport = true
-                }
-            }
         }
     }
 }

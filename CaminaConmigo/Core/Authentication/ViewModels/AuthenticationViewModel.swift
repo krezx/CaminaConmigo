@@ -69,7 +69,7 @@ class AuthenticationViewModel: ObservableObject {
                     email: authResult.user.email ?? ""
                 )
                 
-                try await db.collection("users").document(authResult.user.uid).setData(from: userProfile)
+                try db.collection("users").document(authResult.user.uid).setData(from: userProfile)
             }
             
         } catch {
