@@ -9,14 +9,21 @@ struct Chat: Identifiable {
     let lastMessage: String
     let timeString: String
     let lastMessageTimestamp: Date
+    let adminId: String?  // ID del administrador del grupo
     
     var dictionary: [String: Any] {
-        return [
+        var dict: [String: Any] = [
             "participants": participants,
             "name": name,
             "lastMessage": lastMessage,
             "lastMessageTimestamp": Timestamp(date: lastMessageTimestamp)
         ]
+        
+        if let adminId = adminId {
+            dict["adminId"] = adminId
+        }
+        
+        return dict
     }
 }
 
@@ -49,6 +56,7 @@ extension Chat {
         }
         
         let userNames = data["userNames"] as? [String: String] ?? [:]
+        let adminId = data["adminId"] as? String
         
         // Si hay un nombre de grupo explícito, usarlo
         var name = data["name"] as? String
@@ -67,7 +75,8 @@ extension Chat {
             name: name!,
             lastMessage: lastMessage,
             timeString: DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: timestamp
+            lastMessageTimestamp: timestamp,
+            adminId: adminId
         )
     }
 }

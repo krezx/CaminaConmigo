@@ -109,7 +109,8 @@ class ChatViewModel: ObservableObject {
             name: name,
             lastMessage: "Nuevo chat creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date()
+            lastMessageTimestamp: Date(),
+            adminId: currentUserId
         )
         
         db.collection("chats")
@@ -122,13 +123,19 @@ class ChatViewModel: ObservableObject {
     }
     
     func createGroupChat(name: String, participants: [String], completion: @escaping (Bool) -> Void) {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            completion(false)
+            return
+        }
+        
         let chat = Chat(
             id: UUID().uuidString,
             participants: participants,
             name: name,
             lastMessage: "Grupo creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date()
+            lastMessageTimestamp: Date(),
+            adminId: currentUserId  // El creador del grupo será el administrador
         )
         
         db.collection("chats")
