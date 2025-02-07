@@ -82,7 +82,7 @@ class FriendsViewModel: ObservableObject {
         // Combinar resultados y tomar el primero válido
         let allDocs = emailSnapshot.documents + usernameSnapshot.documents
         guard let friendDoc = allDocs.first(where: { $0.documentID != currentUser.uid }) else {
-            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no encontrado o es tu propio usuario"])
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no encontrado"])
         }
         
         // Verificar si ya existe una solicitud pendiente
