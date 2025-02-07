@@ -75,8 +75,7 @@ class AuthenticationViewModel: ObservableObject {
                     username: username,
                     email: email,
                     profileType: "Público",
-                    photoURL: authResult.user.photoURL?.absoluteString,
-                    displayName: displayName
+                    photoURL: authResult.user.photoURL?.absoluteString
                 )
                 
                 try await db.collection("users").document(authResult.user.uid).setData(from: userProfile)

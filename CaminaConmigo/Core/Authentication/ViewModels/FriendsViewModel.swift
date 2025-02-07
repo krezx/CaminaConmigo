@@ -7,6 +7,7 @@ class FriendsViewModel: ObservableObject {
     @Published var friendRequests: [FriendRequest] = []
     @Published var error: String?
     @Published var isLoading = false
+    @Published var friendNicknames: [String: String] = [:]
     private let db = Firestore.firestore()
     
     init() {
@@ -72,17 +73,23 @@ class FriendsViewModel: ObservableObject {
                             return
                         }
                         
-                        var friends = snapshot?.documents.compactMap { document -> UserProfile? in
-                            var profile = try? document.data(as: UserProfile.self)
-                            // Asignar el nickname si existe
-                            if let nickname = nicknames[document.documentID] {
-                                profile?.displayName = nickname
+                        var friends = snapshot?.documents.compactMap { document -> (UserProfile, String?)? in
+                            if let profile = try? document.data(as: UserProfile.self) {
+                                // Obtener el nickname si existe
+                                let nickname = nicknames[document.documentID]
+                                return (profile, nickname)
                             }
-                            return profile
+                            return nil
                         } ?? []
                         
                         DispatchQueue.main.async {
-                            self?.friends = friends
+                            self?.friends = friends.map { profile, nickname in
+                                profile // Aquí ya no necesitamos modificar el displayName
+                            }
+                            // Guardamos los nicknames en una propiedad separada si los necesitamos mostrar en la UI
+                            self?.friendNicknames = Dictionary(uniqueKeysWithValues: friends.compactMap { profile, nickname in
+                                nickname.map { (profile.id, $0) }
+                            })
                         }
                     }
             }
