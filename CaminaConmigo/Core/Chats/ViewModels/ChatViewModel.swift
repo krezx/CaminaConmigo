@@ -110,7 +110,7 @@ class ChatViewModel: ObservableObject {
             lastMessage: "Nuevo chat creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
             lastMessageTimestamp: Date(),
-            adminId: currentUserId
+            adminIds: [currentUserId]
         )
         
         db.collection("chats")
@@ -135,7 +135,7 @@ class ChatViewModel: ObservableObject {
             lastMessage: "Grupo creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
             lastMessageTimestamp: Date(),
-            adminId: currentUserId  // El creador del grupo será el administrador
+            adminIds: [currentUserId]  // El creador será el primer administrador
         )
         
         db.collection("chats")
@@ -193,16 +193,83 @@ class ChatViewModel: ObservableObject {
             throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no autenticado"])
         }
         
-        // Verificar que el usuario es el administrador
+        // Verificar que el usuario es uno de los administradores
         let chatDoc = try await db.collection("chats").document(chatId).getDocument()
-        guard let adminId = chatDoc.data()?["adminId"] as? String,
-              adminId == currentUserId else {
-            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Solo el administrador puede editar el nombre del grupo"])
+        guard let adminIds = chatDoc.data()?["adminIds"] as? [String],
+              adminIds.contains(currentUserId) else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Solo los administradores pueden editar el nombre del grupo"])
         }
         
         // Actualizar el nombre del grupo
         try await db.collection("chats").document(chatId).updateData([
             "name": newName
+        ])
+    }
+    
+    func addAdmin(chatId: String, userId: String) async throws {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no autenticado"])
+        }
+        
+        let chatDoc = try await db.collection("chats").document(chatId).getDocument()
+        
+        // Verificar que el usuario actual es administrador
+        guard var adminIds = chatDoc.data()?["adminIds"] as? [String],
+              adminIds.contains(currentUserId) else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Solo los administradores pueden agregar otros administradores"])
+        }
+        
+        // Verificar que el usuario a agregar es participante del grupo
+        guard let participants = chatDoc.data()?["participants"] as? [String],
+              participants.contains(userId) else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "El usuario debe ser participante del grupo"])
+        }
+        
+        // Verificar que no sea ya administrador
+        if adminIds.contains(userId) {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "El usuario ya es administrador"])
+        }
+        
+        // Agregar el nuevo administrador
+        adminIds.append(userId)
+        
+        // Actualizar en Firestore
+        try await db.collection("chats").document(chatId).updateData([
+            "adminIds": adminIds
+        ])
+    }
+    
+    func removeAdmin(chatId: String, userId: String) async throws {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no autenticado"])
+        }
+        
+        let chatDoc = try await db.collection("chats").document(chatId).getDocument()
+        
+        // Verificar que el usuario actual es el creador del grupo (primer administrador)
+        guard let adminIds = chatDoc.data()?["adminIds"] as? [String],
+              !adminIds.isEmpty,
+              adminIds[0] == currentUserId else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Solo el creador del grupo puede remover administradores"])
+        }
+        
+        // No permitir remover al creador del grupo
+        if userId == adminIds[0] {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No se puede remover al creador del grupo"])
+        }
+        
+        // No permitir remover al último administrador
+        if adminIds.count <= 1 {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Debe haber al menos un administrador en el grupo"])
+        }
+        
+        var updatedAdminIds = adminIds
+        // Remover el administrador
+        updatedAdminIds.removeAll { $0 == userId }
+        
+        // Actualizar en Firestore
+        try await db.collection("chats").document(chatId).updateData([
+            "adminIds": updatedAdminIds
         ])
     }
 } 

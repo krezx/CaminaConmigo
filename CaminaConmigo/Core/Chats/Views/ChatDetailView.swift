@@ -63,16 +63,19 @@ struct ChatHeader: View {
     @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var showNicknameDialog = false
     @State private var showGroupNameDialog = false
+    @State private var showAdminActionSheet = false
+    @State private var selectedUserId: String?
     @State private var newNickname = ""
     @State private var newGroupName = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var friendNickname: String?
     @State private var originalUsername: String?
+    @State private var participantNames: [String: String] = [:]  // [userId: nombre]
 
     private var isAdmin: Bool {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return false }
-        return chat.adminId == currentUserId
+        return chat.adminIds.contains(currentUserId)
     }
 
     private var displayName: String {
@@ -82,6 +85,41 @@ struct ChatHeader: View {
             return friendNickname ?? chat.name
         }
         return chat.name
+    }
+
+    private func loadParticipantNames() async {
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        
+        for userId in chat.participants where userId != currentUserId {
+            do {
+                // Primero intentar obtener el nickname si es amigo
+                let friendDoc = try await db.collection("users")
+                    .document(currentUserId)
+                    .collection("friends")
+                    .document(userId)
+                    .getDocument()
+                
+                if let nickname = friendDoc.data()?["nickname"] as? String {
+                    DispatchQueue.main.async {
+                        participantNames[userId] = nickname
+                    }
+                } else {
+                    // Si no es amigo o no tiene nickname, obtener el username
+                    let userDoc = try await db.collection("users")
+                        .document(userId)
+                        .getDocument()
+                    
+                    if let username = userDoc.data()?["username"] as? String {
+                        DispatchQueue.main.async {
+                            participantNames[userId] = "@\(username)"
+                        }
+                    }
+                }
+            } catch {
+                print("Error al cargar nombre del participante: \(error.localizedDescription)")
+            }
+        }
     }
 
     var body: some View {
@@ -139,12 +177,30 @@ struct ChatHeader: View {
                     }
                 }
                 
-                // Opción para editar nombre del grupo (solo para administrador)
+                // Opciones de grupo (solo para administradores)
                 if chat.participants.count > 2 && isAdmin {
                     Button(action: {
                         showGroupNameDialog = true
                     }) {
                         Label("Editar nombre del grupo", systemImage: "pencil")
+                    }
+                    
+                    Menu("Administrar miembros") {
+                        ForEach(chat.participants, id: \.self) { userId in
+                            if userId != Auth.auth().currentUser?.uid {
+                                Button(action: {
+                                    selectedUserId = userId
+                                    showAdminActionSheet = true
+                                }) {
+                                    Label(
+                                        chat.adminIds.contains(userId) ? 
+                                            "👑 \(participantNames[userId] ?? "Usuario") (Admin)" : 
+                                            participantNames[userId] ?? "Usuario",
+                                        systemImage: "person"
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -216,7 +272,45 @@ struct ChatHeader: View {
         } message: {
             Text(alertMessage)
         }
+        .confirmationDialog("Acciones de administrador", isPresented: $showAdminActionSheet, titleVisibility: .visible) {
+            if let userId = selectedUserId {
+                if chat.adminIds.contains(userId) {
+                    Button("Remover como administrador", role: .destructive) {
+                        Task {
+                            do {
+                                try await chatViewModel.removeAdmin(chatId: chat.id, userId: userId)
+                                alertMessage = "Administrador removido con éxito"
+                            } catch {
+                                alertMessage = error.localizedDescription
+                            }
+                            showAlert = true
+                        }
+                    }
+                } else {
+                    Button("Hacer administrador") {
+                        Task {
+                            do {
+                                try await chatViewModel.addAdmin(chatId: chat.id, userId: userId)
+                                alertMessage = "Administrador agregado con éxito"
+                            } catch {
+                                alertMessage = error.localizedDescription
+                            }
+                            showAlert = true
+                        }
+                    }
+                }
+                
+                Button("Cancelar", role: .cancel) {
+                    selectedUserId = nil
+                }
+            }
+        }
         .onAppear {
+            // Cargar nombres de participantes
+            Task {
+                await loadParticipantNames()
+            }
+            
             // Cargar el nickname y username al aparecer la vista
             if chat.participants.count == 2,
                let currentUserId = Auth.auth().currentUser?.uid,
