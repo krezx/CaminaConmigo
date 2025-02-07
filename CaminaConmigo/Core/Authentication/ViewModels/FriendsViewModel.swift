@@ -219,28 +219,6 @@ class FriendsViewModel: ObservableObject {
         // Crear chat para ambos usuarios
         let chatId = UUID().uuidString
         
-        // Chat para usuario 1
-        let chat1 = Chat(
-            id: chatId,
-            participants: [userId1, userId2],
-            name: user2Profile.username,
-            lastMessage: "¡Hola! Ahora somos amigos",
-            timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date(),
-            nicknames: [:]
-        )
-        
-        // Chat para usuario 2
-        let chat2 = Chat(
-            id: chatId,
-            participants: [userId1, userId2],
-            name: user1Profile.username,
-            lastMessage: "¡Hola! Ahora somos amigos",
-            timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date(),
-            nicknames: [:]
-        )
-        
         // Guardar el chat en la colección de chats
         try await db.collection("chats").document(chatId).setData([
             "participants": [userId1, userId2],

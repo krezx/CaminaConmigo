@@ -37,7 +37,7 @@ struct UserNotification: Codable, Identifiable {
             createdAt: Date(),
             isRead: false,
             data: [
-                "fromUserId": fromUser.id ?? "",
+                "fromUserId": fromUser.id,
                 "fromUsername": fromUser.username,
                 "requestId": requestId
             ]
