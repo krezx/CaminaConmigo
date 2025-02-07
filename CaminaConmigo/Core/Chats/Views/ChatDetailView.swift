@@ -64,7 +64,9 @@ struct ChatHeader: View {
     @State private var showNicknameDialog = false
     @State private var showGroupNameDialog = false
     @State private var showAdminActionSheet = false
+    @State private var showAddParticipantsSheet = false
     @State private var selectedUserId: String?
+    @State private var selectedFriends: Set<String> = []
     @State private var newNickname = ""
     @State private var newGroupName = ""
     @State private var showAlert = false
@@ -72,6 +74,7 @@ struct ChatHeader: View {
     @State private var friendNickname: String?
     @State private var originalUsername: String?
     @State private var participantNames: [String: String] = [:]  // [userId: nombre]
+    @State private var availableFriends: [UserProfile] = []
 
     private var isAdmin: Bool {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return false }
@@ -81,7 +84,7 @@ struct ChatHeader: View {
     private var displayName: String {
         if chat.participants.count == 2,
            let currentUserId = Auth.auth().currentUser?.uid,
-           let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+           let _ = chat.participants.first(where: { $0 != currentUserId }) {
             return friendNickname ?? chat.name
         }
         return chat.name
@@ -118,6 +121,24 @@ struct ChatHeader: View {
                 }
             } catch {
                 print("Error al cargar nombre del participante: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func loadAvailableFriends() {
+        Task {
+            do {
+                // Usar loadFriends en lugar de loadFriendsAsync
+                friendsViewModel.loadFriends()
+                
+                // Esperar a que se carguen los amigos
+                try await Task.sleep(nanoseconds: 1_000_000_000)  // Esperar 1 segundo
+                
+                DispatchQueue.main.async {
+                    self.availableFriends = friendsViewModel.friends.filter { !chat.participants.contains($0.id) }
+                }
+            } catch {
+                print("Error al cargar amigos: \(error.localizedDescription)")
             }
         }
     }
@@ -183,6 +204,14 @@ struct ChatHeader: View {
                         showGroupNameDialog = true
                     }) {
                         Label("Editar nombre del grupo", systemImage: "pencil")
+                    }
+                    
+                    Button(action: {
+                        selectedFriends.removeAll()
+                        loadAvailableFriends()
+                        showAddParticipantsSheet = true
+                    }) {
+                        Label("Añadir participantes", systemImage: "person.badge.plus")
                     }
                     
                     Menu("Administrar miembros") {
@@ -303,6 +332,55 @@ struct ChatHeader: View {
                 Button("Cancelar", role: .cancel) {
                     selectedUserId = nil
                 }
+            }
+        }
+        .sheet(isPresented: $showAddParticipantsSheet) {
+            NavigationView {
+                List {
+                    ForEach(availableFriends) { friend in
+                        Button(action: {
+                            if selectedFriends.contains(friend.id) {
+                                selectedFriends.remove(friend.id)
+                            } else {
+                                selectedFriends.insert(friend.id)
+                            }
+                        }) {
+                            HStack {
+                                Text(friend.name)
+                                Spacer()
+                                if selectedFriends.contains(friend.id) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.blue)
+                                } else {
+                                    Image(systemName: "circle")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+                    }
+                }
+                .navigationTitle("Añadir participantes")
+                .navigationBarItems(
+                    leading: Button("Cancelar") {
+                        showAddParticipantsSheet = false
+                    },
+                    trailing: Button("Añadir") {
+                        Task {
+                            do {
+                                try await chatViewModel.addParticipants(
+                                    chatId: chat.id,
+                                    newParticipants: Array(selectedFriends)
+                                )
+                                alertMessage = "Participantes añadidos con éxito"
+                            } catch {
+                                alertMessage = error.localizedDescription
+                            }
+                            showAlert = true
+                            showAddParticipantsSheet = false
+                        }
+                    }
+                    .disabled(selectedFriends.isEmpty)
+                )
             }
         }
         .onAppear {

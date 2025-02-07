@@ -272,4 +272,53 @@ class ChatViewModel: ObservableObject {
             "adminIds": updatedAdminIds
         ])
     }
+    
+    func addParticipants(chatId: String, newParticipants: [String]) async throws {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no autenticado"])
+        }
+        
+        let chatDoc = try await db.collection("chats").document(chatId).getDocument()
+        
+        // Verificar que el usuario actual es administrador
+        guard let adminIds = chatDoc.data()?["adminIds"] as? [String],
+              adminIds.contains(currentUserId) else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Solo los administradores pueden añadir participantes"])
+        }
+        
+        // Obtener participantes actuales
+        guard var participants = chatDoc.data()?["participants"] as? [String] else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Error al obtener participantes actuales"])
+        }
+        
+        // Filtrar participantes que ya están en el grupo
+        let newValidParticipants = newParticipants.filter { !participants.contains($0) }
+        
+        if newValidParticipants.isEmpty {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Los usuarios seleccionados ya son participantes del grupo"])
+        }
+        
+        // Añadir nuevos participantes
+        participants.append(contentsOf: newValidParticipants)
+        
+        // Actualizar en Firestore
+        try await db.collection("chats").document(chatId).updateData([
+            "participants": participants
+        ])
+        
+        // Crear mensaje de sistema informando de los nuevos participantes
+        let message = Message(
+            id: UUID().uuidString,
+            senderId: "system",
+            content: "Se han añadido nuevos participantes al grupo",
+            timestamp: Date(),
+            isRead: false
+        )
+        
+        try await db.collection("chats")
+            .document(chatId)
+            .collection("messages")
+            .document(message.id)
+            .setData(message.dictionary)
+    }
 } 
