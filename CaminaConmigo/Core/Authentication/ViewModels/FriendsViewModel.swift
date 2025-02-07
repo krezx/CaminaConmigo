@@ -73,7 +73,7 @@ class FriendsViewModel: ObservableObject {
                             return
                         }
                         
-                        var friends = snapshot?.documents.compactMap { document -> (UserProfile, String?)? in
+                        let friends = snapshot?.documents.compactMap { document -> (UserProfile, String?)? in
                             if let profile = try? document.data(as: UserProfile.self) {
                                 // Obtener el nickname si existe
                                 let nickname = nicknames[document.documentID]

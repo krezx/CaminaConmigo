@@ -66,6 +66,7 @@ struct ChatHeader: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var friendNickname: String?
+    @State private var originalUsername: String?
 
     private var displayName: String {
         if chat.participants.count == 2,
@@ -114,6 +115,14 @@ struct ChatHeader: View {
             
             // Menú de opciones
             Menu {
+                // Mostrar el nombre de usuario original si existe un apodo diferente
+                if let originalUsername = originalUsername,
+                   let nickname = friendNickname,
+                   originalUsername != nickname {
+                    Text("Usuario: @\(originalUsername)")
+                        .foregroundColor(.gray)
+                }
+                
                 // Solo mostrar la opción de cambiar apodo si es un chat individual
                 if chat.participants.count == 2 {
                     Button(action: {
@@ -170,26 +179,40 @@ struct ChatHeader: View {
             Text(alertMessage)
         }
         .onAppear {
-            // Cargar el nickname al aparecer la vista
+            // Cargar el nickname y username al aparecer la vista
             if chat.participants.count == 2,
                let currentUserId = Auth.auth().currentUser?.uid,
                let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+                
+                // Cargar el nickname
                 Task {
                     do {
-                        let snapshot = try await Firestore.firestore()
+                        let friendSnapshot = try await Firestore.firestore()
                             .collection("users")
                             .document(currentUserId)
                             .collection("friends")
                             .document(otherUserId)
                             .getDocument()
                         
-                        if let nickname = snapshot.data()?["nickname"] as? String {
+                        if let nickname = friendSnapshot.data()?["nickname"] as? String {
                             DispatchQueue.main.async {
                                 self.friendNickname = nickname
                             }
                         }
+                        
+                        // Cargar el username original
+                        let userSnapshot = try await Firestore.firestore()
+                            .collection("users")
+                            .document(otherUserId)
+                            .getDocument()
+                        
+                        if let username = userSnapshot.data()?["username"] as? String {
+                            DispatchQueue.main.async {
+                                self.originalUsername = username
+                            }
+                        }
                     } catch {
-                        print("Error al cargar el nickname: \(error.localizedDescription)")
+                        print("Error al cargar el nickname o username: \(error.localizedDescription)")
                     }
                 }
             }
