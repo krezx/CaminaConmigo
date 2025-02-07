@@ -50,6 +50,18 @@ struct ProfileView: View {
                                     .scaledToFill()
                                     .frame(width: 150, height: 150)
                                     .clipShape(Circle())
+                            } else if let photoURL = viewModel.userProfile?.photoURL,
+                                    let url = URL(string: photoURL) {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 150, height: 150)
+                                        .clipShape(Circle())
+                                } placeholder: {
+                                    ProgressView()
+                                        .frame(width: 150, height: 150)
+                                }
                             } else {
                                 Image(systemName: "person.circle")
                                     .resizable()

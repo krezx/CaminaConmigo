@@ -63,13 +63,23 @@ class AuthenticationViewModel: ObservableObject {
             
             if !userDoc.exists {
                 // Solo crear nuevo perfil si el usuario no existe
+                let displayName = authResult.user.displayName ?? "Usuario"
+                let email = authResult.user.email ?? ""
+                // Crear un username único basado en el email
+                let baseUsername = email.components(separatedBy: "@").first ?? "user"
+                let username = try await generateUniqueUsername(baseUsername: baseUsername)
+                
                 let userProfile = UserProfile(
                     id: authResult.user.uid,
-                    name: authResult.user.displayName ?? "",
-                    email: authResult.user.email ?? ""
+                    name: displayName,
+                    username: username,
+                    email: email,
+                    profileType: "Público",
+                    photoURL: authResult.user.photoURL?.absoluteString,
+                    displayName: displayName
                 )
                 
-                try db.collection("users").document(authResult.user.uid).setData(from: userProfile)
+                try await db.collection("users").document(authResult.user.uid).setData(from: userProfile)
             }
             
         } catch {
@@ -95,6 +105,24 @@ class AuthenticationViewModel: ObservableObject {
             } catch {
                 print("Error al cerrar sesión: \(error.localizedDescription)") // Muestra un mensaje de error si no se puede cerrar sesión.
             }
+        }
+    }
+    
+    private func generateUniqueUsername(baseUsername: String) async throws -> String {
+        var username = baseUsername
+        var counter = 1
+        
+        while true {
+            let snapshot = try await db.collection("users")
+                .whereField("username", isEqualTo: username)
+                .getDocuments()
+            
+            if snapshot.documents.isEmpty {
+                return username
+            }
+            
+            username = "\(baseUsername)\(counter)"
+            counter += 1
         }
     }
 }

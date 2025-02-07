@@ -42,8 +42,11 @@ class FriendsViewModel: ObservableObject {
             return
         }
         
-        db.collection("users")
-            .whereField(FieldPath.documentID(), in: friendIds)
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+        
+        // Primero, obtener los nicknames de la colección de amigos
+        db.collection("users").document(currentUserId)
+            .collection("friends")
             .getDocuments { [weak self] snapshot, error in
                 if let error = error {
                     DispatchQueue.main.async {
@@ -52,13 +55,36 @@ class FriendsViewModel: ObservableObject {
                     return
                 }
                 
-                let friends = snapshot?.documents.compactMap { document -> UserProfile? in
-                    try? document.data(as: UserProfile.self)
-                } ?? []
+                // Crear un diccionario de nicknames por ID de amigo
+                let nicknames = Dictionary(uniqueKeysWithValues: snapshot?.documents.compactMap { doc -> (String, String)? in
+                    guard let nickname = doc.data()["nickname"] as? String else { return nil }
+                    return (doc.documentID, nickname)
+                } ?? [])
                 
-                DispatchQueue.main.async {
-                    self?.friends = friends
-                }
+                // Luego, obtener los perfiles completos de los amigos
+                self?.db.collection("users")
+                    .whereField(FieldPath.documentID(), in: friendIds)
+                    .getDocuments { [weak self] snapshot, error in
+                        if let error = error {
+                            DispatchQueue.main.async {
+                                self?.error = error.localizedDescription
+                            }
+                            return
+                        }
+                        
+                        var friends = snapshot?.documents.compactMap { document -> UserProfile? in
+                            var profile = try? document.data(as: UserProfile.self)
+                            // Asignar el nickname si existe
+                            if let nickname = nicknames[document.documentID] {
+                                profile?.displayName = nickname
+                            }
+                            return profile
+                        } ?? []
+                        
+                        DispatchQueue.main.async {
+                            self?.friends = friends
+                        }
+                    }
             }
     }
     
@@ -208,13 +234,19 @@ class FriendsViewModel: ObservableObject {
         try await db.collection("users").document(userId1)
             .collection("friends")
             .document(userId2)
-            .setData(["addedAt": FieldValue.serverTimestamp()])
+            .setData([
+                "addedAt": FieldValue.serverTimestamp(),
+                "nickname": user2Profile.username // Usar el username como nickname inicial
+            ])
         
         // Agregar amigo para el usuario 2
         try await db.collection("users").document(userId2)
             .collection("friends")
             .document(userId1)
-            .setData(["addedAt": FieldValue.serverTimestamp()])
+            .setData([
+                "addedAt": FieldValue.serverTimestamp(),
+                "nickname": user1Profile.username // Usar el username como nickname inicial
+            ])
         
         // Crear chat para ambos usuarios
         let chatId = UUID().uuidString
@@ -227,8 +259,19 @@ class FriendsViewModel: ObservableObject {
             "userNames": [
                 userId1: user1Profile.username,
                 userId2: user2Profile.username
-            ],
-            "nicknames": [:] // Inicializar el diccionario de apodos vacío
+            ]
         ])
+    }
+    
+    // Agregar función para actualizar el nickname de un amigo
+    func updateFriendNickname(friendId: String, newNickname: String) async throws {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No hay usuario autenticado"])
+        }
+        
+        try await db.collection("users").document(currentUserId)
+            .collection("friends")
+            .document(friendId)
+            .updateData(["nickname": newNickname])
     }
 } 

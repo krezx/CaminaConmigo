@@ -9,6 +9,7 @@ struct FriendRequest: Codable, Identifiable {
     let createdAt: Date
     let fromUserEmail: String
     let fromUserName: String
+    var nickname: String?  // Nickname opcional para el amigo
     
     enum RequestStatus: String, Codable {
         case pending

@@ -7,6 +7,7 @@
 
 import SwiftUI // Importa el framework SwiftUI para la construcción de la interfaz de usuario.
 import FirebaseAuth
+import FirebaseFirestore
 
 /// Vista que muestra los detalles de un chat, incluyendo el encabezado del chat, los mensajes y el campo de entrada de mensajes.
 struct ChatDetailView: View {
@@ -58,11 +59,22 @@ struct ChatDetailView: View {
 struct ChatHeader: View {
     let chat: Chat
     let presentationMode: Binding<PresentationMode>
-    @StateObject private var viewModel = ChatViewModel()
+    @StateObject private var chatViewModel = ChatViewModel()
+    @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var showNicknameDialog = false
     @State private var newNickname = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var friendNickname: String?
+
+    private var displayName: String {
+        if chat.participants.count == 2,
+           let currentUserId = Auth.auth().currentUser?.uid,
+           let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+            return friendNickname ?? chat.name
+        }
+        return chat.name
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -77,7 +89,7 @@ struct ChatHeader: View {
                 .fill(Color.gray.opacity(0.3))
                 .frame(width: 40, height: 40)
             
-            Text(chat.name)
+            Text(displayName)
                 .lineLimit(1)
                 .font(.title)
                 .bold()
@@ -102,10 +114,13 @@ struct ChatHeader: View {
             
             // Menú de opciones
             Menu {
-                Button(action: {
-                    showNicknameDialog = true
-                }) {
-                    Label("Cambiar apodo", systemImage: "pencil")
+                // Solo mostrar la opción de cambiar apodo si es un chat individual
+                if chat.participants.count == 2 {
+                    Button(action: {
+                        showNicknameDialog = true
+                    }) {
+                        Label("Cambiar apodo", systemImage: "pencil")
+                    }
                 }
                 
                 Button(action: {
@@ -136,7 +151,8 @@ struct ChatHeader: View {
                     if let otherUserId = chat.participants.first(where: { $0 != Auth.auth().currentUser?.uid }) {
                         Task {
                             do {
-                                try await viewModel.updateNickname(in: chat.id, for: otherUserId, newNickname: newNickname)
+                                try await friendsViewModel.updateFriendNickname(friendId: otherUserId, newNickname: newNickname)
+                                friendNickname = newNickname // Actualizar el nickname localmente
                                 alertMessage = "Apodo actualizado con éxito"
                             } catch {
                                 alertMessage = "Error al actualizar el apodo: \(error.localizedDescription)"
@@ -152,6 +168,31 @@ struct ChatHeader: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(alertMessage)
+        }
+        .onAppear {
+            // Cargar el nickname al aparecer la vista
+            if chat.participants.count == 2,
+               let currentUserId = Auth.auth().currentUser?.uid,
+               let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+                Task {
+                    do {
+                        let snapshot = try await Firestore.firestore()
+                            .collection("users")
+                            .document(currentUserId)
+                            .collection("friends")
+                            .document(otherUserId)
+                            .getDocument()
+                        
+                        if let nickname = snapshot.data()?["nickname"] as? String {
+                            DispatchQueue.main.async {
+                                self.friendNickname = nickname
+                            }
+                        }
+                    } catch {
+                        print("Error al cargar el nickname: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
     }
 }

@@ -109,8 +109,7 @@ class ChatViewModel: ObservableObject {
             name: name,
             lastMessage: "Nuevo chat creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date(),
-            nicknames: [:]
+            lastMessageTimestamp: Date()
         )
         
         db.collection("chats")
@@ -129,8 +128,7 @@ class ChatViewModel: ObservableObject {
             name: name,
             lastMessage: "Grupo creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: Date(),
-            nicknames: [:]
+            lastMessageTimestamp: Date()
         )
         
         db.collection("chats")

@@ -7,6 +7,7 @@
 
 import SwiftUI // Importa el framework SwiftUI para construir la interfaz de usuario.
 import FirebaseAuth
+import FirebaseFirestore
 
 /// Vista principal que muestra una lista de chats disponibles.
 struct ChatListView: View {
@@ -129,9 +130,19 @@ struct ChatHeaderButtons: View {
 /// Vista que representa una fila individual de chat. Esta vista incluye información sobre el chat, como el nombre, el último mensaje y la hora.
 struct ChatRowView: View {
     let chat: Chat // El chat que se mostrará en la fila
+    @State private var friendNickname: String?
+    
+    var displayName: String {
+        if chat.participants.count == 2,
+           let currentUserId = Auth.auth().currentUser?.uid,
+           let _ = chat.participants.first(where: { $0 != currentUserId }) {
+            return friendNickname ?? chat.name
+        }
+        return chat.name
+    }
     
     var body: some View {
-        NavigationLink(destination: ChatDetailView(chat: chat)) { // Al hacer clic, se navega a la vista de detalles del chat
+        NavigationLink(destination: ChatDetailView(chat: chat)) {
             HStack(spacing: 12) {
                 // Imagen de perfil del chat (simulada aquí con un círculo gris)
                 Circle()
@@ -141,7 +152,7 @@ struct ChatRowView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         // Nombre del chat
-                        Text(chat.name)
+                        Text(displayName)
                             .font(.system(size: 16, weight: .medium))
                         Spacer()
                         // Hora del último mensaje
@@ -154,11 +165,36 @@ struct ChatRowView: View {
                     Text(chat.lastMessage)
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
-                        .lineLimit(1) // Limita el texto a una sola línea
+                        .lineLimit(1)
                 }
             }
-            .padding(.vertical, 8) // Añade espacio vertical a la fila
+            .padding(.vertical, 8)
         }
-        .buttonStyle(PlainButtonStyle()) // Estilo plano para el botón de la fila (sin cambios visuales)
+        .buttonStyle(PlainButtonStyle())
+        .onAppear {
+            // Cargar el nickname al aparecer la vista
+            if chat.participants.count == 2,
+               let currentUserId = Auth.auth().currentUser?.uid,
+               let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+                Task {
+                    do {
+                        let snapshot = try await Firestore.firestore()
+                            .collection("users")
+                            .document(currentUserId)
+                            .collection("friends")
+                            .document(otherUserId)
+                            .getDocument()
+                        
+                        if let nickname = snapshot.data()?["nickname"] as? String {
+                            DispatchQueue.main.async {
+                                self.friendNickname = nickname
+                            }
+                        }
+                    } catch {
+                        print("Error al cargar el nickname: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
     }
 }

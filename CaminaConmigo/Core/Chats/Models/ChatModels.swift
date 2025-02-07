@@ -9,15 +9,13 @@ struct Chat: Identifiable {
     let lastMessage: String
     let timeString: String
     let lastMessageTimestamp: Date
-    let nicknames: [String: String]  // Diccionario de apodos por usuario
     
     var dictionary: [String: Any] {
         return [
             "participants": participants,
             "name": name,
             "lastMessage": lastMessage,
-            "lastMessageTimestamp": Timestamp(date: lastMessageTimestamp),
-            "nicknames": nicknames
+            "lastMessageTimestamp": Timestamp(date: lastMessageTimestamp)
         ]
     }
 }
@@ -50,7 +48,6 @@ extension Chat {
             return nil
         }
         
-        let nicknames = data["nicknames"] as? [String: String] ?? [:]
         let userNames = data["userNames"] as? [String: String] ?? [:]
         
         // Si hay un nombre de grupo explícito, usarlo
@@ -59,7 +56,7 @@ extension Chat {
         // Si no hay nombre de grupo (chat individual), usar el nombre del otro participante
         if name == nil && participants.count == 2 {
             let otherUserId = participants.first { $0 != currentUserId } ?? ""
-            name = nicknames[otherUserId] ?? userNames[otherUserId] ?? "Usuario"
+            name = userNames[otherUserId] ?? "Usuario"
         } else if name == nil {
             name = "Grupo sin nombre"
         }
@@ -70,8 +67,7 @@ extension Chat {
             name: name!,
             lastMessage: lastMessage,
             timeString: DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .short),
-            lastMessageTimestamp: timestamp,
-            nicknames: nicknames
+            lastMessageTimestamp: timestamp
         )
     }
 }
