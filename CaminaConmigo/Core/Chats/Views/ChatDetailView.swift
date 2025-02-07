@@ -62,11 +62,18 @@ struct ChatHeader: View {
     @StateObject private var chatViewModel = ChatViewModel()
     @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var showNicknameDialog = false
+    @State private var showGroupNameDialog = false
     @State private var newNickname = ""
+    @State private var newGroupName = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var friendNickname: String?
     @State private var originalUsername: String?
+
+    private var isAdmin: Bool {
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return false }
+        return chat.adminId == currentUserId
+    }
 
     private var displayName: String {
         if chat.participants.count == 2,
@@ -132,6 +139,15 @@ struct ChatHeader: View {
                     }
                 }
                 
+                // Opción para editar nombre del grupo (solo para administrador)
+                if chat.participants.count > 2 && isAdmin {
+                    Button(action: {
+                        showGroupNameDialog = true
+                    }) {
+                        Label("Editar nombre del grupo", systemImage: "pencil")
+                    }
+                }
+                
                 Button(action: {
                     // Acción para eliminar chat (por implementar)
                 }) {
@@ -169,6 +185,28 @@ struct ChatHeader: View {
                             showAlert = true
                             newNickname = ""
                         }
+                    }
+                }
+            }
+        }
+        .alert("Editar nombre del grupo", isPresented: $showGroupNameDialog) {
+            TextField("Nuevo nombre", text: $newGroupName)
+            
+            Button("Cancelar", role: .cancel) {
+                newGroupName = ""
+            }
+            
+            Button("Guardar") {
+                if !newGroupName.isEmpty {
+                    Task {
+                        do {
+                            try await chatViewModel.updateGroupName(chatId: chat.id, newName: newGroupName)
+                            alertMessage = "Nombre del grupo actualizado con éxito"
+                        } catch {
+                            alertMessage = "Error al actualizar el nombre: \(error.localizedDescription)"
+                        }
+                        showAlert = true
+                        newGroupName = ""
                     }
                 }
             }

@@ -187,4 +187,22 @@ class ChatViewModel: ObservableObject {
             "nicknames": nicknames
         ])
     }
+    
+    func updateGroupName(chatId: String, newName: String) async throws {
+        guard let currentUserId = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Usuario no autenticado"])
+        }
+        
+        // Verificar que el usuario es el administrador
+        let chatDoc = try await db.collection("chats").document(chatId).getDocument()
+        guard let adminId = chatDoc.data()?["adminId"] as? String,
+              adminId == currentUserId else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Solo el administrador puede editar el nombre del grupo"])
+        }
+        
+        // Actualizar el nombre del grupo
+        try await db.collection("chats").document(chatId).updateData([
+            "name": newName
+        ])
+    }
 } 
