@@ -72,20 +72,11 @@ struct SugerenciasView: View {
                     .cornerRadius(8)
                 
                 // Campo de texto para el mensaje.
-                TextEditor(text: $mensaje)
-                    .frame(height: 150)
-                    .padding(8)
-                    .background(Color(UIColor.systemGray5))
+                TextField("Mensaje...", text: $mensaje, axis: .vertical)  // Campo para el mensaje con múltiples líneas
+                    .frame(height: 100, alignment: .top)
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
                     .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.clear, lineWidth: 1))
-                    .overlay(
-                        VStack {
-                            if mensaje.isEmpty {
-                                Text("Mensaje")  // Texto de marcador de posición para el campo de mensaje.
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    )
                 
                 // Opción de enviar de forma anónima.
                 HStack {
