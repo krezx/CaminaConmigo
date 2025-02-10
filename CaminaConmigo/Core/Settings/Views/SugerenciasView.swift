@@ -18,6 +18,11 @@ struct SugerenciasView: View {
     @State private var razon: String = ""
     @State private var mensaje: String = ""
     @State private var enviarAnonimo: Bool = false
+    @State private var isLoading = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    
+    private let mailerService = MailerSendService()
     
     var body: some View {
         VStack(spacing: 0) {
@@ -84,46 +89,82 @@ struct SugerenciasView: View {
                         Text("Enviar de forma Anónima")
                             .font(.subheadline)
                     }
-                    .toggleStyle(CheckboxToggleStyle())  // Estilo personalizado para el toggle.
+                    .toggleStyle(CustomCheckboxStyle())
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
                 Spacer()  // Espacio antes del botón de envío.
                 
-                // Botón de envío del formulario.
                 Button(action: {
-                    // Acción del botón Enviar (actualmente solo imprime un mensaje en consola).
-                    print("Formulario enviado")
+                    Task {
+                        await enviarSugerencia()
+                    }
                 }) {
-                    Text("Enviar")  // Texto del botón.
-                        .bold()
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(10)
-                        .background(Color(red: 239/255, green: 96/255, blue: 152/255))  // Color de fondo del botón.
-                        .cornerRadius(30)
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .tint(.white)
+                    } else {
+                        Text("Enviar")
+                            .bold()
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(10)
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .background(Color(red: 239/255, green: 96/255, blue: 152/255))
+                .cornerRadius(30)
                 .padding(.horizontal)
+                .disabled(isLoading)
             }
             .padding()  // Espaciado dentro del formulario.
         }
         .navigationBarHidden(true)  // Ocultar la barra de navegación.
         .toolbar(.hidden, for: .tabBar)  // Ocultar la barra de pestañas.
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text("Mensaje"),
+                message: Text(alertMessage),
+                dismissButton: .default(Text("OK")) {
+                    if alertMessage.contains("éxito") {
+                        dismiss()
+                    }
+                }
+            )
+        }
+    }
+    
+    private func enviarSugerencia() async {
+        isLoading = true
+        do {
+            try await mailerService.sendSuggestion(
+                nombre: nombre,
+                numero: numero,
+                razon: razon,
+                mensaje: mensaje,
+                isAnonymous: enviarAnonimo
+            )
+            alertMessage = "Sugerencia enviada con éxito"
+            showAlert = true
+        } catch {
+            alertMessage = "Error al enviar la sugerencia: \(error.localizedDescription)"
+            showAlert = true
+        }
+        isLoading = false
     }
 }
 
-/// Estilo personalizado para el `Toggle` que actúa como un checkbox.
-struct CheckboxToggleStyle: ToggleStyle {
+struct CustomCheckboxStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack {
-            Image(systemName: configuration.isOn ? "checkmark.square" : "square")  // Íconos para indicar si el toggle está activado o no.
-                .foregroundColor(configuration.isOn ? .pink : .gray)
-                .onTapGesture { configuration.isOn.toggle() }  // Permite alternar el estado con un toque.
+            Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                .foregroundColor(configuration.isOn ? Color(red: 239/255, green: 96/255, blue: 152/255) : .gray)
+                .font(.system(size: 20))
+                .onTapGesture {
+                    configuration.isOn.toggle()
+                }
             configuration.label
         }
     }
-}
-
-#Preview {
-    SugerenciasView()  // Vista previa de la vista SugerenciasView.
 }
