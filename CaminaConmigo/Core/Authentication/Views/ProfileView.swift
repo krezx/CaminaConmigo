@@ -50,6 +50,18 @@ struct ProfileView: View {
                                     .scaledToFill()
                                     .frame(width: 150, height: 150)
                                     .clipShape(Circle())
+                            } else if let photoURL = viewModel.userProfile?.photoURL,
+                                    let url = URL(string: photoURL) {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 150, height: 150)
+                                        .clipShape(Circle())
+                                } placeholder: {
+                                    ProgressView()
+                                        .frame(width: 150, height: 150)
+                                }
                             } else {
                                 Image(systemName: "person.circle")
                                     .resizable()
@@ -135,9 +147,14 @@ struct ProfileView: View {
             }
             .alert("Editar nombre de usuario", isPresented: $showEditUsername) {
                 TextField("Nombre de usuario", text: $tempUsername)
-                Button("Cancelar", role: .cancel) {}
+                Button("Cancelar", role: .cancel) {
+                    tempUsername = ""
+                }
                 Button("Guardar") {
-                    viewModel.updateUsername(tempUsername)
+                    Task {
+                        await viewModel.updateUsername(tempUsername)
+                        tempUsername = ""
+                    }
                 }
             }
             .alert("Error", isPresented: .constant(viewModel.error != nil)) {

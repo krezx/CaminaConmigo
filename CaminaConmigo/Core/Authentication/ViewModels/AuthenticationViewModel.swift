@@ -9,12 +9,14 @@ import Foundation // Importa el framework Foundation para trabajar con tipos bá
 import Firebase // Importa Firebase para la autenticación.
 import GoogleSignIn // Importa la biblioteca de Google Sign-In para autenticar usuarios con Google.
 import FirebaseAuth // Importa FirebaseAuth para gestionar la autenticación de usuarios en Firebase.
+import FirebaseFirestore // Importa FirebaseFirestore para trabajar con Firestore.
 
 /// ViewModel que gestiona la autenticación del usuario, utilizando Firebase y Google Sign-In.
 class AuthenticationViewModel: ObservableObject {
     @Published var userSession: FirebaseAuth.User? // Almacena la sesión actual del usuario autenticado.
     @Published var currentUser: User? // Información adicional del usuario (aunque no se utiliza explícitamente en el código).
     @Published var isGuestMode: Bool = false // Indica si el usuario está en modo invitado.
+    private let db = Firestore.firestore() // Agregamos referencia a Firestore
     
     /// Inicializador que establece la sesión del usuario si ya está autenticado en Firebase.
     init() {
@@ -56,6 +58,29 @@ class AuthenticationViewModel: ObservableObject {
             let authResult = try await Auth.auth().signIn(with: credential)
             self.userSession = authResult.user // Establece la sesión del usuario en Firebase.
             
+            // Verificar si el usuario ya existe en Firestore
+            let userDoc = try await db.collection("users").document(authResult.user.uid).getDocument()
+            
+            if !userDoc.exists {
+                // Solo crear nuevo perfil si el usuario no existe
+                let displayName = authResult.user.displayName ?? "Usuario"
+                let email = authResult.user.email ?? ""
+                // Crear un username único basado en el email
+                let baseUsername = email.components(separatedBy: "@").first ?? "user"
+                let username = try await generateUniqueUsername(baseUsername: baseUsername)
+                
+                let userProfile = UserProfile(
+                    id: authResult.user.uid,
+                    name: displayName,
+                    username: username,
+                    email: email,
+                    profileType: "Público",
+                    photoURL: authResult.user.photoURL?.absoluteString
+                )
+                
+                try await db.collection("users").document(authResult.user.uid).setData(from: userProfile)
+            }
+            
         } catch {
             throw AuthError.signInError // Lanza un error si ocurre un fallo durante el proceso de inicio de sesión.
         }
@@ -79,6 +104,24 @@ class AuthenticationViewModel: ObservableObject {
             } catch {
                 print("Error al cerrar sesión: \(error.localizedDescription)") // Muestra un mensaje de error si no se puede cerrar sesión.
             }
+        }
+    }
+    
+    private func generateUniqueUsername(baseUsername: String) async throws -> String {
+        var username = baseUsername
+        var counter = 1
+        
+        while true {
+            let snapshot = try await db.collection("users")
+                .whereField("username", isEqualTo: username)
+                .getDocuments()
+            
+            if snapshot.documents.isEmpty {
+                return username
+            }
+            
+            username = "\(baseUsername)\(counter)"
+            counter += 1
         }
     }
 }

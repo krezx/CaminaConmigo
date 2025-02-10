@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		005EC4432D53C34A0036333F /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 005EC4422D53C34A0036333F /* FirebaseMessaging */; };
+		009F53962D53D4B600B3180E /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 009F53952D53D4B600B3180E /* FirebaseFunctions */; };
 		00CFEB392D47F55700A50B2E /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEB382D47F55700A50B2E /* FirebaseCore */; };
 		00CFEC062D481B3700A50B2E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC052D481B3700A50B2E /* FirebaseAuth */; };
 		00CFEC092D481D8900A50B2E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 00CFEC082D481D8900A50B2E /* GoogleSignIn */; };
@@ -47,12 +49,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				005EC4432D53C34A0036333F /* FirebaseMessaging in Frameworks */,
 				00CFEC152D48294000A50B2E /* FirebaseDatabase in Frameworks */,
 				00CFEB392D47F55700A50B2E /* FirebaseCore in Frameworks */,
 				00CFEC062D481B3700A50B2E /* FirebaseAuth in Frameworks */,
 				00E7436B2D519741007A5350 /* FirebaseDynamicLinks in Frameworks */,
 				00CFEC092D481D8900A50B2E /* GoogleSignIn in Frameworks */,
 				00CFEC192D48294000A50B2E /* FirebaseStorage in Frameworks */,
+				009F53962D53D4B600B3180E /* FirebaseFunctions in Frameworks */,
 				00CFEC0B2D481D8900A50B2E /* GoogleSignInSwift in Frameworks */,
 				00CFEC172D48294000A50B2E /* FirebaseFirestore in Frameworks */,
 			);
@@ -105,6 +109,8 @@
 				00CFEC162D48294000A50B2E /* FirebaseFirestore */,
 				00CFEC182D48294000A50B2E /* FirebaseStorage */,
 				00E7436A2D519741007A5350 /* FirebaseDynamicLinks */,
+				005EC4422D53C34A0036333F /* FirebaseMessaging */,
+				009F53952D53D4B600B3180E /* FirebaseFunctions */,
 			);
 			productName = CaminaConmigo;
 			productReference = 00CFEB1C2D47F03B00A50B2E /* CaminaConmigo.app */;
@@ -397,6 +403,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		005EC4422D53C34A0036333F /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		009F53952D53D4B600B3180E /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
 		00CFEB382D47F55700A50B2E /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 00CFEB372D47F55700A50B2E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
