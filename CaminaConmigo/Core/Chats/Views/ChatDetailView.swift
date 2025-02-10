@@ -75,6 +75,8 @@ struct ChatHeader: View {
     @State private var originalUsername: String?
     @State private var participantNames: [String: String] = [:]  // [userId: nombre]
     @State private var availableFriends: [UserProfile] = []
+    @State private var showLocationSharingAlert = false
+    @State private var isShareingLocation = false
 
     private var isAdmin: Bool {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return false }
@@ -165,19 +167,26 @@ struct ChatHeader: View {
             Spacer()
             
             // Íconos de ubicación y ondas
-            VStack {
-                ZStack {
-                    Image(systemName: "location")
-                        .font(.caption)
-                    Image(systemName: "wave.3.left")
-                        .font(.caption)
-                        .offset(x: -12, y: 0)
-                    Image(systemName: "wave.3.right")
-                        .font(.caption)
-                        .offset(x: 12, y: 0)
+            Button(action: {
+                showLocationSharingAlert = true
+            }) {
+                VStack {
+                    ZStack {
+                        Image(systemName: "location")
+                            .font(.caption)
+                            .foregroundColor(isShareingLocation ? .blue : .black)
+                        Image(systemName: "wave.3.left")
+                            .font(.caption)
+                            .foregroundColor(isShareingLocation ? .blue : .black)
+                            .offset(x: -12, y: 0)
+                        Image(systemName: "wave.3.right")
+                            .font(.caption)
+                            .foregroundColor(isShareingLocation ? .blue : .black)
+                            .offset(x: 12, y: 0)
+                    }
                 }
+                .padding(.trailing, 8)
             }
-            .padding(.trailing, 8)
             
             // Menú de opciones
             Menu {
@@ -382,6 +391,17 @@ struct ChatHeader: View {
                     .disabled(selectedFriends.isEmpty)
                 )
             }
+        }
+        .alert("Compartir ubicación", isPresented: $showLocationSharingAlert) {
+            Button(isShareingLocation ? "Dejar de compartir" : "Compartir", role: isShareingLocation ? .destructive : .none) {
+                isShareingLocation.toggle()
+                // Aquí implementarías la lógica para comenzar/detener el compartir ubicación
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text(isShareingLocation ? 
+                "¿Deseas dejar de compartir tu ubicación actual?" :
+                "¿Deseas compartir tu ubicación actual? Se compartirá hasta que decidas detenerla.")
         }
         .onAppear {
             // Cargar nombres de participantes
