@@ -10,23 +10,17 @@ import SwiftUI
 /// Vista que permite al usuario enviar sugerencias a través de un formulario con campos para nombre,
 /// número, razón, mensaje y una opción de enviar de forma anónima.
 struct SugerenciasView: View {
-    @Environment(\.dismiss) private var dismiss  // Permite cerrar la vista cuando sea necesario.
-    
-    // Variables de estado para los campos del formulario.
-    @State private var nombre: String = ""
-    @State private var numero: String = ""
-    @State private var razon: String = ""
-    @State private var mensaje: String = ""
-    @State private var enviarAnonimo: Bool = false
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel = SugerenciasViewModel()
     
     var body: some View {
         VStack(spacing: 0) {
             // Encabezado con botón de retroceso
             HStack {
                 Button(action: {
-                    dismiss()  // Cierra la vista cuando se presiona el botón.
+                    dismiss()
                 }) {
-                    Image(systemName: "chevron.left")  // Icono de flecha hacia atrás.
+                    Image(systemName: "chevron.left")
                         .foregroundColor(.black)
                         .font(.title3)
                 }
@@ -34,14 +28,14 @@ struct SugerenciasView: View {
                 
                 Spacer()
                 
-                Text("Sugerencias")  // Título de la vista.
+                Text("Sugerencias")
                     .font(.title)
                     .bold()
                 
                 Spacer()
                 
                 Button(action: {}) {
-                    Image(systemName: "chevron.left")  // Espaciador invisible para equilibrar el diseño.
+                    Image(systemName: "chevron.left")
                         .foregroundColor(.clear)
                         .font(.title3)
                 }
@@ -49,90 +43,108 @@ struct SugerenciasView: View {
             }
             .padding(.vertical, 5)
             .background(Color.white)
-            .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)  // Sombra para el encabezado.
+            .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
             
-            Spacer(minLength: 16)  // Espacio entre el encabezado y el formulario.
+            Spacer(minLength: 16)
             
-            VStack(spacing: 20) {
-                // Campos del formulario.
-                TextField("Nombre", text: $nombre)  // Campo para el nombre.
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
-                
-                TextField("Numero", text: $numero)  // Campo para el número.
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
-                    .keyboardType(.numberPad)  // Solo permite números en este campo.
-                
-                TextField("Razón", text: $razon)  // Campo para la razón de la sugerencia.
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
-                
-                // Campo de texto para el mensaje.
-                TextEditor(text: $mensaje)
-                    .frame(height: 150)
-                    .padding(8)
-                    .background(Color(UIColor.systemGray5))
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.clear, lineWidth: 1))
-                    .overlay(
-                        VStack {
-                            if mensaje.isEmpty {
-                                Text("Mensaje")  // Texto de marcador de posición para el campo de mensaje.
-                                    .foregroundColor(.gray)
-                            }
+            ScrollView {
+                VStack(spacing: 20) {
+                    TextField("Nombre", text: $viewModel.nombre)
+                        .padding()
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                    
+                    TextField("Numero", text: $viewModel.numero)
+                        .padding()
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                        .keyboardType(.numberPad)
+                    
+                    TextField("Razón", text: $viewModel.razon)
+                        .padding()
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                    
+                    TextField("Mensaje...", text: $viewModel.mensaje, axis: .vertical)
+                        .frame(height: 100, alignment: .top)
+                        .padding()
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                    
+                    HStack {
+                        Toggle(isOn: $viewModel.enviarAnonimo) {
+                            Text("Enviar de forma Anónima")
+                                .font(.subheadline)
                         }
-                    )
-                
-                // Opción de enviar de forma anónima.
-                HStack {
-                    Toggle(isOn: $enviarAnonimo) {
-                        Text("Enviar de forma Anónima")
-                            .font(.subheadline)
+                        .toggleStyle(CustomCheckboxStyle())
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .toggleStyle(CheckboxToggleStyle())  // Estilo personalizado para el toggle.
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        Task {
+                            await viewModel.enviarSugerencia()
+                        }
+                    }) {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .tint(.white)
+                        } else {
+                            Text("Enviar")
+                                .bold()
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(10)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .background(Color(red: 239/255, green: 96/255, blue: 152/255))
+                    .cornerRadius(30)
+                    .padding(.horizontal)
+                    .disabled(viewModel.isLoading)
                 }
-                
-                Spacer()  // Espacio antes del botón de envío.
-                
-                // Botón de envío del formulario.
-                Button(action: {
-                    // Acción del botón Enviar (actualmente solo imprime un mensaje en consola).
-                    print("Formulario enviado")
-                }) {
-                    Text("Enviar")  // Texto del botón.
-                        .bold()
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(10)
-                        .background(Color(red: 239/255, green: 96/255, blue: 152/255))  // Color de fondo del botón.
-                        .cornerRadius(30)
-                }
-                .padding(.horizontal)
+                .padding()
             }
-            .padding()  // Espaciado dentro del formulario.
+            .background(Color.white)
+            .gesture(
+                TapGesture()
+                    .onEnded { _ in
+                        hideKeyboard()
+                    }
+            )
         }
-        .navigationBarHidden(true)  // Ocultar la barra de navegación.
-        .toolbar(.hidden, for: .tabBar)  // Ocultar la barra de pestañas.
+        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .tabBar)
+        .alert(isPresented: $viewModel.showAlert) {
+            Alert(
+                title: Text("Mensaje"),
+                message: Text(viewModel.alertMessage),
+                dismissButton: .default(Text("OK")) {
+                    if viewModel.alertMessage.contains("éxito") {
+                        dismiss()
+                    }
+                }
+            )
+        }
+    }
+    
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
-/// Estilo personalizado para el `Toggle` que actúa como un checkbox.
-struct CheckboxToggleStyle: ToggleStyle {
+struct CustomCheckboxStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack {
-            Image(systemName: configuration.isOn ? "checkmark.square" : "square")  // Íconos para indicar si el toggle está activado o no.
-                .foregroundColor(configuration.isOn ? .pink : .gray)
-                .onTapGesture { configuration.isOn.toggle() }  // Permite alternar el estado con un toque.
+            Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                .foregroundColor(configuration.isOn ? Color(red: 239/255, green: 96/255, blue: 152/255) : .gray)
+                .font(.system(size: 20))
+                .onTapGesture {
+                    configuration.isOn.toggle()
+                }
             configuration.label
         }
     }
-}
-
-#Preview {
-    SugerenciasView()  // Vista previa de la vista SugerenciasView.
 }
