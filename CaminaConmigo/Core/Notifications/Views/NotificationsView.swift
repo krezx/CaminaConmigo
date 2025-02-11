@@ -64,11 +64,6 @@ struct NotificationsView: View {
                                 NotificationRow(notification: notification, viewModel: viewModel)
                                     .padding(.horizontal)
                                     .padding(.vertical, 8)
-                                    .onAppear {
-                                        if !notification.isRead {
-                                            viewModel.markNotificationAsRead(notification)
-                                        }
-                                    }
                                 Divider()
                             }
                         }
@@ -120,6 +115,7 @@ struct NotificationRow: View {
                 Spacer()
             }
             .opacity(notification.isRead ? 0.8 : 1)
+            .contentShape(Rectangle())
             .onTapGesture {
                 handleNotificationTap()
             }
@@ -146,13 +142,13 @@ struct NotificationRow: View {
     }
     
     private func handleNotificationTap() {
+        if !notification.isRead {
+            viewModel.markNotificationAsRead(notification)
+        }
+        
         if notification.type == .groupInvite,
            let chatId = notification.data["chatId"] {
             navigateToChat = true
-        }
-        
-        if !notification.isRead {
-            viewModel.markNotificationAsRead(notification)
         }
     }
     
