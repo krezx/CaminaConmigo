@@ -117,7 +117,10 @@ struct NotificationRow: View {
                     Text(notification.message)
                         .font(.subheadline)
                         .foregroundColor(.gray)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Spacer()
             }
