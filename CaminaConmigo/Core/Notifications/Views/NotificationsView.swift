@@ -40,26 +40,31 @@ struct NotificationsView: View {
             
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    // Sección de solicitudes de amistad pendientes
-                    if !viewModel.friendRequests.isEmpty {
-                        Section {
-                            ForEach(viewModel.friendRequests) { request in
+                    // Lista de solicitudes pendientes
+                    if !friendsViewModel.friendRequests.isEmpty {
+                        VStack(alignment: .leading) {
+                            Text("Solicitudes pendientes")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            ForEach(friendsViewModel.friendRequests) { request in
                                 FriendRequestRow(request: request, viewModel: friendsViewModel)
                                     .padding(.horizontal)
                                     .padding(.vertical, 8)
+                                Divider()
                             }
-                        } header: {
-                            Text("Solicitudes de amistad")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding()
-                                .background(Color.gray.opacity(0.1))
                         }
+                        .padding(.vertical)
                     }
                     
                     // Sección de notificaciones generales
                     if !viewModel.notifications.isEmpty {
-                        Section {
+                        VStack(alignment: .leading) {
+                            Text("Notificaciones")
+                                .font(.headline)
+                                .padding(.horizontal)
+                                .padding(.top)
+                            
                             ForEach(viewModel.notifications) { notification in
                                 NotificationRow(notification: notification, viewModel: viewModel)
                                     .padding(.horizontal)
@@ -69,6 +74,7 @@ struct NotificationsView: View {
                                             viewModel.markNotificationAsRead(notification)
                                         }
                                     }
+                                Divider()
                             }
                         }
                     }
@@ -82,76 +88,8 @@ struct NotificationsView: View {
         } message: {
             Text(alertMessage)
         }
-    }
-}
-
-struct FriendRequestNotificationRow: View {
-    let request: FriendRequest
-    let viewModel: FriendsViewModel
-    @State private var isLoading = false
-    @State private var showError = false
-    @State private var errorMessage = ""
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // Avatar
-            Circle()
-                .fill(Color.blue.opacity(0.2))
-                .frame(width: 50, height: 50)
-                .overlay(
-                    Text(String(request.fromUserName.prefix(1)).uppercased())
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                )
-            
-            // Información
-            VStack(alignment: .leading, spacing: 4) {
-                Text(request.fromUserName)
-                    .font(.headline)
-                Text(request.fromUserEmail)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-            }
-            
-            Spacer()
-            
-            // Botones de acción
-            if isLoading {
-                ProgressView()
-            } else {
-                HStack(spacing: 12) {
-                    Button(action: { handleRequest(accept: true) }) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.title2)
-                    }
-                    
-                    Button(action: { handleRequest(accept: false) }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.red)
-                            .font(.title2)
-                    }
-                }
-            }
-        }
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(errorMessage)
-        }
-    }
-    
-    private func handleRequest(accept: Bool) {
-        isLoading = true
-        Task {
-            do {
-                try await viewModel.handleFriendRequest(request, accept: accept)
-                isLoading = false
-            } catch {
-                errorMessage = error.localizedDescription
-                showError = true
-                isLoading = false
-            }
+        .onAppear {
+            friendsViewModel.loadFriendRequests()
         }
     }
 }
