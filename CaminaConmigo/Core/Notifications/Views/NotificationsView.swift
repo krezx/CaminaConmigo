@@ -60,11 +60,6 @@ struct NotificationsView: View {
                     // Sección de notificaciones generales
                     if !viewModel.notifications.isEmpty {
                         VStack(alignment: .leading) {
-                            Text("Notificaciones")
-                                .font(.headline)
-                                .padding(.horizontal)
-                                .padding(.top)
-                            
                             ForEach(viewModel.notifications) { notification in
                                 NotificationRow(notification: notification, viewModel: viewModel)
                                     .padding(.horizontal)
