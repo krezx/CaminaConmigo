@@ -160,19 +160,6 @@ class FriendsViewModel: ObservableObject {
         let requestRef = db.collection("friendRequests").document()
         try await requestRef.setData(try Firestore.Encoder().encode(friendRequest))
         
-        // Crear y guardar la notificación
-        let notification = UserNotification.createFriendRequestNotification(
-            forUser: friendDoc.documentID,
-            fromUser: currentUserProfile,
-            requestId: requestRef.documentID
-        )
-        
-        // Guardar la notificación en la colección de notificaciones del usuario destinatario
-        try await db.collection("users")
-            .document(friendDoc.documentID)
-            .collection("notifications")
-            .document()
-            .setData(try Firestore.Encoder().encode(notification))
     }
     
     func loadFriendRequests() {

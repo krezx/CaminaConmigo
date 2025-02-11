@@ -24,26 +24,6 @@ struct UserNotification: Codable, Identifiable {
         isRead = true
     }
     
-    static func createFriendRequestNotification(
-        forUser userId: String,
-        fromUser: UserProfile,
-        requestId: String
-    ) -> UserNotification {
-        UserNotification(
-            userId: userId,
-            type: .friendRequest,
-            title: "Nueva solicitud de amistad",
-            message: "\(fromUser.username) quiere ser tu amigo",
-            createdAt: Date(),
-            isRead: false,
-            data: [
-                "fromUserId": fromUser.id,
-                "fromUsername": fromUser.username,
-                "requestId": requestId
-            ]
-        )
-    }
-    
     static func createFriendRequestAcceptedNotification(
         forUser userId: String,
         fromUser: UserProfile
