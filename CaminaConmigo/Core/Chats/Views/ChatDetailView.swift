@@ -11,36 +11,45 @@ import FirebaseFirestore
 
 /// Vista que muestra los detalles de un chat, incluyendo el encabezado del chat, los mensajes y el campo de entrada de mensajes.
 struct ChatDetailView: View {
-    let chat: Chat // El chat que se va a mostrar.
+    @State var chat: Chat // Cambiado a @State
     @StateObject private var viewModel = ChatViewModel()
-    @State private var messageText: String = "" // El texto del mensaje que se está escribiendo en el campo de entrada.
+    @State private var messageText: String = "" 
+    @State private var isLoadingChat: Bool = false
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header del chat
-            ChatHeader(chat: chat, presentationMode: presentationMode)
-            
-            // Vista de los mensajes
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(viewModel.messages) { message in
-                        MessageBubble(message: message, chat: chat)
+            if isLoadingChat {
+                ProgressView()
+            } else {
+                // Header del chat
+                ChatHeader(chat: chat, presentationMode: presentationMode)
+                
+                // Vista de los mensajes
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(viewModel.messages) { message in
+                            MessageBubble(message: message, chat: chat)
+                        }
                     }
+                    .padding()
                 }
-                .padding()
-            }
-            
-            // Campo de entrada de mensaje
-            MessageInputField(messageText: $messageText) {
-                if !messageText.isEmpty {
-                    viewModel.sendMessage(messageText, in: chat.id)
-                    messageText = ""
+                
+                // Campo de entrada de mensaje
+                MessageInputField(messageText: $messageText) {
+                    if !messageText.isEmpty {
+                        viewModel.sendMessage(messageText, in: chat.id)
+                        messageText = ""
+                    }
                 }
             }
         }
         .navigationBarHidden(true) // Oculta la barra de navegación.
         .onAppear {
+            if chat.participants.isEmpty {
+                // Si el chat se abrió desde una notificación, cargar los datos completos
+                loadFullChatData()
+            }
             viewModel.listenToMessages(in: chat.id)
         }
         .alert("Error", isPresented: .constant(viewModel.error != nil)) {
@@ -50,6 +59,18 @@ struct ChatDetailView: View {
         } message: {
             if let error = viewModel.error {
                 Text(error)
+            }
+        }
+    }
+    
+    private func loadFullChatData() {
+        isLoadingChat = true
+        Task {
+            if let updatedChat = await viewModel.loadChatById(chat.id) {
+                DispatchQueue.main.async {
+                    chat = updatedChat // Ahora podemos modificar chat porque es @State
+                    isLoadingChat = false
+                }
             }
         }
     }

@@ -138,6 +138,7 @@ class ChatViewModel: ObservableObject {
             adminIds: [currentUserId]  // El creador será el primer administrador
         )
         
+        // Crear el chat
         db.collection("chats")
             .document(chat.id)
             .setData(chat.dictionary) { [weak self] error in
@@ -145,6 +146,29 @@ class ChatViewModel: ObservableObject {
                     self?.error = error.localizedDescription
                     completion(false)
                 } else {
+                    // Enviar notificaciones a todos los participantes excepto al creador
+                    for participantId in participants where participantId != currentUserId {
+                        let notification = UserNotification(
+                            userId: participantId,
+                            type: .groupInvite,
+                            title: "Nuevo grupo",
+                            message: "Has sido añadido al grupo '\(name)'",
+                            createdAt: Date(),
+                            isRead: false,
+                            data: [
+                                "chatId": chat.id,
+                                "groupName": name,
+                                "createdBy": currentUserId
+                            ]
+                        )
+                        
+                        // Guardar la notificación en Firestore
+                        self?.db.collection("users")
+                            .document(participantId)
+                            .collection("notifications")
+                            .document()
+                            .setData(try! Firestore.Encoder().encode(notification))
+                    }
                     completion(true)
                 }
             }
@@ -320,5 +344,28 @@ class ChatViewModel: ObservableObject {
             .collection("messages")
             .document(message.id)
             .setData(message.dictionary)
+    }
+    
+    func loadChatById(_ chatId: String) async -> Chat? {
+        do {
+            let chatDoc = try await db.collection("chats")
+                .document(chatId)
+                .getDocument()
+            
+            if let data = chatDoc.data() {
+                return Chat(
+                    id: chatDoc.documentID,
+                    participants: data["participants"] as? [String] ?? [],
+                    name: data["name"] as? String ?? "Grupo",
+                    lastMessage: data["lastMessage"] as? String ?? "",
+                    timeString: DateFormatter.localizedString(from: (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() ?? Date(), dateStyle: .none, timeStyle: .short),
+                    lastMessageTimestamp: (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() ?? Date(),
+                    adminIds: data["adminIds"] as? [String] ?? []
+                )
+            }
+        } catch {
+            self.error = error.localizedDescription
+        }
+        return nil
     }
 } 

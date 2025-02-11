@@ -97,29 +97,65 @@ struct NotificationsView: View {
 struct NotificationRow: View {
     let notification: UserNotification
     let viewModel: NotificationsViewModel
+    @State private var navigateToChat: Bool = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(notification.isRead ? Color.gray.opacity(0.2) : Color.blue.opacity(0.2))
-                .frame(width: 50, height: 50)
-                .overlay(
-                    Image(systemName: iconForType(notification.type))
-                        .foregroundColor(notification.isRead ? .gray : .blue)
-                )
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(notification.title)
-                    .font(.headline)
-                    .foregroundColor(notification.isRead ? .gray : .primary)
-                Text(notification.message)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+        NavigationLink(destination: destinationView, isActive: $navigateToChat) {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(notification.isRead ? Color.gray.opacity(0.2) : Color.blue.opacity(0.2))
+                    .frame(width: 50, height: 50)
+                    .overlay(
+                        Image(systemName: iconForType(notification.type))
+                            .foregroundColor(notification.isRead ? .gray : .blue)
+                    )
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(notification.title)
+                        .font(.headline)
+                        .foregroundColor(notification.isRead ? .gray : .primary)
+                    Text(notification.message)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+                
+                Spacer()
             }
-            
-            Spacer()
+            .opacity(notification.isRead ? 0.8 : 1)
+            .onTapGesture {
+                handleNotificationTap()
+            }
         }
-        .opacity(notification.isRead ? 0.8 : 1)
+    }
+    
+    private var destinationView: some View {
+        Group {
+            if notification.type == .groupInvite,
+               let chatId = notification.data["chatId"] {
+                ChatDetailView(chat: Chat(
+                    id: chatId,
+                    participants: [], // Se cargarán los datos completos al abrir el chat
+                    name: notification.data["groupName"] ?? "Grupo",
+                    lastMessage: "",
+                    timeString: "",
+                    lastMessageTimestamp: Date(),
+                    adminIds: []
+                ))
+            } else {
+                EmptyView()
+            }
+        }
+    }
+    
+    private func handleNotificationTap() {
+        if notification.type == .groupInvite,
+           let chatId = notification.data["chatId"] {
+            navigateToChat = true
+        }
+        
+        if !notification.isRead {
+            viewModel.markNotificationAsRead(notification)
+        }
     }
     
     private func iconForType(_ type: UserNotification.NotificationType) -> String {

@@ -215,7 +215,3 @@ struct MenuItem: View {
         .padding(.vertical, 10)
     }
 }
-
-#Preview {
-    MenuView()  // Previsualización del menú.
-}
