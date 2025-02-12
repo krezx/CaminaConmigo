@@ -15,6 +15,9 @@ struct NotificationsView: View {
     @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showReportDetail = false
+    @State private var selectedReport: ReportAnnotation?
+    @StateObject private var reportViewModel = ReportViewModel()
     
     var body: some View {
         VStack {
@@ -61,7 +64,7 @@ struct NotificationsView: View {
                     if !viewModel.notifications.isEmpty {
                         VStack(alignment: .leading) {
                             ForEach(viewModel.notifications) { notification in
-                                NotificationRow(notification: notification, viewModel: viewModel)
+                                NotificationRow(notification: notification, viewModel: viewModel, reportViewModel: reportViewModel, selectedReport: $selectedReport, showReportDetail: $showReportDetail)
                                     .padding(.horizontal)
                                     .padding(.vertical, 8)
                                 Divider()
@@ -81,13 +84,21 @@ struct NotificationsView: View {
         .onAppear {
             friendsViewModel.loadFriendRequests()
         }
+        .sheet(isPresented: $showReportDetail) {
+            if let report = selectedReport {
+                ReportDetailPopupView(report: report, viewModel: reportViewModel)
+            }
+        }
     }
 }
 
 struct NotificationRow: View {
     let notification: UserNotification
     let viewModel: NotificationsViewModel
+    let reportViewModel: ReportViewModel
     @State private var navigateToChat: Bool = false
+    @Binding var selectedReport: ReportAnnotation?
+    @Binding var showReportDetail: Bool
     
     var body: some View {
         NavigationLink(destination: destinationView, isActive: $navigateToChat) {
@@ -188,6 +199,16 @@ struct NotificationRow: View {
         if notification.type == .groupInvite,
            let chatId = notification.data["chatId"] {
             navigateToChat = true
+        }
+
+        if notification.type == .reportComment,
+           let reportId = notification.data["reportId"] {
+            reportViewModel.fetchSpecificReport(reportId) { report in
+                if let report = report {
+                    selectedReport = ReportAnnotation(report: report)
+                    showReportDetail = true
+                }
+            }
         }
     }
     

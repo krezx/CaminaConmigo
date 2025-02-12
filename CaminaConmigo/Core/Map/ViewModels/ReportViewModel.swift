@@ -222,7 +222,7 @@ class ReportViewModel: ObservableObject {
             // Crear el comentario
             let commentData: [String: Any] = [
                 "text": text,
-                "userId": authorId,
+                "authorId": authorId,
                 "authorName": authorName,
                 "reportId": reportId,
                 "timestamp": Timestamp(date: Date())
@@ -382,5 +382,40 @@ class ReportViewModel: ObservableObject {
                 
                 completion(snapshot?.documents.count ?? 0)
             }
+    }
+
+    func fetchSpecificReport(_ reportId: String, completion: @escaping (Report?) -> Void) {
+        db.collection("reportes").document(reportId).getDocument { snapshot, error in
+            guard let document = snapshot,
+                  let data = document.data() else {
+                completion(nil)
+                return
+            }
+            
+            guard let latitude = data["latitude"] as? Double,
+                  let longitude = data["longitude"] as? Double,
+                  let typeTitle = data["type"] as? String,
+                  let description = data["description"] as? String,
+                  let timestamp = data["timestamp"] as? Timestamp,
+                  let userId = data["userId"] as? String,
+                  let type = self.reportTypes.first(where: { $0.title == typeTitle }) else {
+                completion(nil)
+                return
+            }
+            
+            let likes = data["likes"] as? Int ?? 0
+            
+            let report = Report(
+                id: document.documentID,
+                type: type,
+                description: description,
+                coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                likes: likes,
+                timestamp: timestamp.dateValue(),
+                userId: userId
+            )
+            
+            completion(report)
+        }
     }
 }
