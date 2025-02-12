@@ -265,12 +265,54 @@ class ReportViewModel: ObservableObject {
     
     /// Elimina un comentario específico
     func deleteComment(commentId: String, reportId: String) {
+        // Primero obtenemos el comentario para tener la información necesaria
         db.collection("reportes").document(reportId)
             .collection("comentarios")
             .document(commentId)
-            .delete { error in
-                if let error = error {
-                    print("Error deleting comment: \(error.localizedDescription)")
+            .getDocument { [weak self] snapshot, error in
+                guard let self = self,
+                      let commentData = snapshot?.data(),
+                      let authorId = commentData["authorId"] as? String else {
+                    return
+                }
+                
+                // Obtenemos el ID del autor del reporte
+                self.db.collection("reportes").document(reportId).getDocument { document, error in
+                    guard let reportData = document?.data(),
+                          let reportAuthorId = reportData["userId"] as? String else {
+                        return
+                    }
+                    
+                    // Solo buscamos la notificación si el autor del comentario es diferente al autor del reporte
+                    if authorId != reportAuthorId {
+                        // Buscamos la notificación relacionada con este comentario
+                        self.db.collection("users")
+                            .document(reportAuthorId)
+                            .collection("notifications")
+                            .whereField("data.reportId", isEqualTo: reportId)
+                            .whereField("data.commentAuthorId", isEqualTo: authorId)
+                            .whereField("type", isEqualTo: "reportComment")
+                            .getDocuments { snapshot, error in
+                                if let documents = snapshot?.documents {
+                                    // Eliminamos todas las notificaciones encontradas
+                                    let batch = self.db.batch()
+                                    for doc in documents {
+                                        batch.deleteDocument(doc.reference)
+                                    }
+                                    batch.commit()
+                                }
+                            }
+                    }
+                    
+                    // Eliminamos el comentario
+                    self.db.collection("reportes").document(reportId)
+                        .collection("comentarios")
+                        .document(commentId)
+                        .delete { error in
+                            if let error = error {
+                                print("Error deleting comment: \(error.localizedDescription)")
+                            }
+                        }
                 }
             }
     }
