@@ -14,7 +14,7 @@ struct UserNotification: Codable, Identifiable {
     enum NotificationType: String, Codable {
         case friendRequest = "friendRequest"
         case friendRequestAccepted = "friendRequestAccepted"
-        case emergencyAlert = "emergencyAlert"
+        case friendReport = "friendReport"
         case newReport = "newReport"
         case reportComment = "reportComment"
         case groupInvite = "groupInvite"

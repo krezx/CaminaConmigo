@@ -123,10 +123,18 @@ class ReportViewModel: ObservableObject {
             uploadImage(image) { url in
                 var data = reportData
                 data["imageUrl"] = url?.absoluteString ?? ""
-                self.saveReportData(data)
+                self.saveReportData(data) { reportId in
+                    if !report.isAnonymous {
+                        self.notifyFriends(reportId: reportId, report: report)
+                    }
+                }
             }
         } else {
-            saveReportData(reportData)
+            saveReportData(reportData) { reportId in
+                if !report.isAnonymous {
+                    self.notifyFriends(reportId: reportId, report: report)
+                }
+            }
         }
     }
 
@@ -154,16 +162,60 @@ class ReportViewModel: ObservableObject {
         }
     }
 
-    private func saveReportData(_ data: [String: Any]) {
-        db.collection("reportes").addDocument(data: data) { error in
+    private func saveReportData(_ data: [String: Any], completion: @escaping (String) -> Void) {
+        let docRef = db.collection("reportes").addDocument(data: data) { [weak self] error in
             if let error = error {
                 print("Error saving report: \(error.localizedDescription)")
-            } else {
-                print("Report saved successfully")
             }
+            self?.showReportDetailSheet = false
+            self?.currentReport = nil
         }
-        showReportDetailSheet = false
-        currentReport = nil
+        completion(docRef.documentID)
+    }
+
+    private func notifyFriends(reportId: String, report: Report) {
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+        
+        // Obtener el nombre del usuario actual
+        db.collection("users").document(currentUserId).getDocument { [weak self] snapshot, error in
+            guard let self = self,
+                  let userData = snapshot?.data(),
+                  let username = userData["username"] as? String else { return }
+            
+            // Obtener la lista de amigos
+            self.db.collection("users").document(currentUserId)
+                .collection("friends")
+                .getDocuments { snapshot, error in
+                    guard let documents = snapshot?.documents else { return }
+                    
+                    // Para cada amigo, crear una notificación
+                    for doc in documents {
+                        let friendId = doc.documentID
+                        
+                        let notification = UserNotification(
+                            userId: friendId,
+                            type: .friendReport,
+                            title: "Nuevo reporte de amigo",
+                            message: "\(username) ha reportado un incidente de \(report.type.title)",
+                            createdAt: Date(),
+                            isRead: false,
+                            data: [
+                                "reportId": reportId,
+                                "reportType": report.type.title,
+                                "friendId": currentUserId,
+                                "friendName": username
+                            ]
+                        )
+                        
+                        // Guardar la notificación en Firestore
+                        try? self.db.collection("users")
+                            .document(friendId)
+                            .collection("notifications")
+                            .document()
+                            .setData(from: notification)
+                    }
+                }
+        }
     }
 
     /// Obtiene los comentarios para un reporte específico

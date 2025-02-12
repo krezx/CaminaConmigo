@@ -201,7 +201,7 @@ struct NotificationRow: View {
             navigateToChat = true
         }
 
-        if notification.type == .reportComment,
+        if notification.type == .reportComment || notification.type == .friendReport,
            let reportId = notification.data["reportId"] {
             reportViewModel.fetchSpecificReport(reportId) { report in
                 if let report = report {
@@ -218,7 +218,7 @@ struct NotificationRow: View {
             return "person.crop.circle.badge.plus"
         case .friendRequestAccepted:
             return "person.2.circle.fill"
-        case .emergencyAlert:
+        case .friendReport:
             return "exclamationmark.triangle.fill"
         case .newReport:
             return "doc.text.fill"
