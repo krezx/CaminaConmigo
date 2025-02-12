@@ -14,7 +14,7 @@ struct UserNotification: Codable, Identifiable {
     enum NotificationType: String, Codable {
         case friendRequest = "friendRequest"
         case friendRequestAccepted = "friendRequestAccepted"
-        case emergencyAlert = "emergencyAlert"
+        case friendReport = "friendReport"
         case newReport = "newReport"
         case reportComment = "reportComment"
         case groupInvite = "groupInvite"
@@ -22,26 +22,6 @@ struct UserNotification: Codable, Identifiable {
     
     mutating func markAsRead() {
         isRead = true
-    }
-    
-    static func createFriendRequestNotification(
-        forUser userId: String,
-        fromUser: UserProfile,
-        requestId: String
-    ) -> UserNotification {
-        UserNotification(
-            userId: userId,
-            type: .friendRequest,
-            title: "Nueva solicitud de amistad",
-            message: "\(fromUser.username) quiere ser tu amigo",
-            createdAt: Date(),
-            isRead: false,
-            data: [
-                "fromUserId": fromUser.id,
-                "fromUsername": fromUser.username,
-                "requestId": requestId
-            ]
-        )
     }
     
     static func createFriendRequestAcceptedNotification(

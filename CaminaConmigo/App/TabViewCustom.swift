@@ -65,6 +65,7 @@ struct TabViewCustom: View {
                     Text("Chats")
                 }
                 .tag(2) // Etiqueta para identificar esta pestaña.
+                .badge(navigationState.unreadMessagesCount > 0 ? String(navigationState.unreadMessagesCount) : nil)
                 
             AyudaView() // Vista de ayuda.
                 .tabItem { // Elemento de la pestaña de ayuda.
@@ -82,8 +83,4 @@ struct TabViewCustom: View {
         }
         .environmentObject(mapViewModel) // Proporciona el ViewModel del mapa al entorno
     }
-}
-
-#Preview {
-    TabViewCustom() // Vista previa de la TabViewCustom.
 }

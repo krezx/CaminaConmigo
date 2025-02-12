@@ -80,24 +80,43 @@ class ChatViewModel: ObservableObject {
             isRead: false
         )
         
-        // Añadir mensaje a la colección de mensajes
-        db.collection("chats")
+        let batch = db.batch()
+        
+        // Referencia al mensaje
+        let messageRef = db.collection("chats")
             .document(chatId)
             .collection("messages")
             .document(message.id)
-            .setData(message.dictionary) { [weak self] error in
+        
+        // Referencia al chat
+        let chatRef = db.collection("chats").document(chatId)
+        
+        // Añadir mensaje
+        batch.setData(message.dictionary, forDocument: messageRef)
+        
+        // Actualizar último mensaje y contador de mensajes sin leer
+        chatRef.getDocument { [weak self] snapshot, error in
+            guard let document = snapshot, let participants = document.data()?["participants"] as? [String] else { return }
+            
+            var unreadCounts = document.data()?["unreadCount"] as? [String: Int] ?? [:]
+            
+            // Incrementar contador para todos los participantes excepto el remitente
+            for participantId in participants where participantId != currentUserId {
+                unreadCounts[participantId] = (unreadCounts[participantId] ?? 0) + 1
+            }
+            
+            batch.updateData([
+                "lastMessage": content,
+                "lastMessageTimestamp": Timestamp(date: Date()),
+                "unreadCount": unreadCounts
+            ], forDocument: chatRef)
+            
+            batch.commit { error in
                 if let error = error {
                     self?.error = error.localizedDescription
                 }
             }
-        
-        // Actualizar último mensaje en el chat
-        db.collection("chats")
-            .document(chatId)
-            .updateData([
-                "lastMessage": content,
-                "lastMessageTimestamp": Timestamp(date: Date())
-            ])
+        }
     }
     
     func createNewChat(with userId: String, name: String) {
@@ -138,6 +157,7 @@ class ChatViewModel: ObservableObject {
             adminIds: [currentUserId]  // El creador será el primer administrador
         )
         
+        // Crear el chat
         db.collection("chats")
             .document(chat.id)
             .setData(chat.dictionary) { [weak self] error in
@@ -145,6 +165,29 @@ class ChatViewModel: ObservableObject {
                     self?.error = error.localizedDescription
                     completion(false)
                 } else {
+                    // Enviar notificaciones a todos los participantes excepto al creador
+                    for participantId in participants where participantId != currentUserId {
+                        let notification = UserNotification(
+                            userId: participantId,
+                            type: .groupInvite,
+                            title: "Nuevo grupo",
+                            message: "Has sido añadido al grupo '\(name)'",
+                            createdAt: Date(),
+                            isRead: false,
+                            data: [
+                                "chatId": chat.id,
+                                "groupName": name,
+                                "createdBy": currentUserId
+                            ]
+                        )
+                        
+                        // Guardar la notificación en Firestore
+                        self?.db.collection("users")
+                            .document(participantId)
+                            .collection("notifications")
+                            .document()
+                            .setData(try! Firestore.Encoder().encode(notification))
+                    }
                     completion(true)
                 }
             }
@@ -154,6 +197,8 @@ class ChatViewModel: ObservableObject {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
         
         let batch = db.batch()
+        
+        // Actualizar mensajes individuales
         let unreadMessages = messages.filter { !$0.isRead && $0.senderId != currentUserId }
         
         for message in unreadMessages {
@@ -165,7 +210,13 @@ class ChatViewModel: ObservableObject {
             batch.updateData(["isRead": true], forDocument: messageRef)
         }
         
+        // Resetear el contador de mensajes sin leer para el usuario actual
         if !unreadMessages.isEmpty {
+            let chatRef = db.collection("chats").document(chatId)
+            batch.updateData([
+                "unreadCount.\(currentUserId)": 0
+            ], forDocument: chatRef)
+            
             batch.commit { [weak self] error in
                 if let error = error {
                     self?.error = error.localizedDescription
@@ -320,5 +371,28 @@ class ChatViewModel: ObservableObject {
             .collection("messages")
             .document(message.id)
             .setData(message.dictionary)
+    }
+    
+    func loadChatById(_ chatId: String) async -> Chat? {
+        do {
+            let chatDoc = try await db.collection("chats")
+                .document(chatId)
+                .getDocument()
+            
+            if let data = chatDoc.data() {
+                return Chat(
+                    id: chatDoc.documentID,
+                    participants: data["participants"] as? [String] ?? [],
+                    name: data["name"] as? String ?? "Grupo",
+                    lastMessage: data["lastMessage"] as? String ?? "",
+                    timeString: DateFormatter.localizedString(from: (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() ?? Date(), dateStyle: .none, timeStyle: .short),
+                    lastMessageTimestamp: (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() ?? Date(),
+                    adminIds: data["adminIds"] as? [String] ?? []
+                )
+            }
+        } catch {
+            self.error = error.localizedDescription
+        }
+        return nil
     }
 } 

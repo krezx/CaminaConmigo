@@ -12,6 +12,7 @@ import SwiftUI
 struct MenuView: View {
     @EnvironmentObject var navigationState: NavigationState  // Estado de navegación global
     @EnvironmentObject var authViewModel: AuthenticationViewModel  // Vista de autenticación para manejar sesión.
+    @StateObject private var friendsViewModel = FriendsViewModel()
     @StateObject private var viewModel = MenuViewModel()
     
     // Propiedades de estado para controlar las transiciones de navegación.
@@ -58,7 +59,9 @@ struct MenuView: View {
                             navigationState.selectedTab = 2  // Cambiar a la pestaña de Chats
                         }
                     } label: {
-                        MenuItem(icon: "bubble.left.and.bubble.right", title: "Chats")
+                        MenuItem(icon: "bubble.left.and.bubble.right", 
+                                 title: "Chats",
+                                 badgeCount: viewModel.unreadMessagesCount)
                     }
                     
                     // Enlace a Contactos de Emergencia.
@@ -74,7 +77,8 @@ struct MenuView: View {
                     } label: {
                         MenuItem(icon: "bell.circle", 
                                title: "Notificaciones", 
-                               badgeCount: viewModel.pendingNotificationsCount)
+                               badgeCount: viewModel.pendingNotificationsCount,
+                               showPendingDot: !friendsViewModel.friendRequests.isEmpty)
                     }
                 }
                 .padding(.horizontal)
@@ -174,6 +178,7 @@ struct MenuItem: View {
     let icon: String
     let title: String
     var badgeCount: Int?
+    var showPendingDot: Bool = false  // Nuevo parámetro para el círculo de solicitudes pendientes
     
     var body: some View {
         HStack {
@@ -188,6 +193,8 @@ struct MenuItem: View {
             
             Spacer()
             
+            // Muestra el badge count si hay notificaciones,
+            // si no, muestra el círculo si hay solicitudes pendientes
             if let count = badgeCount, count > 0 {
                 Text("\(count)")
                     .font(.caption)
@@ -197,6 +204,11 @@ struct MenuItem: View {
                     .background(Color.red)
                     .clipShape(Capsule())
                     .padding(.trailing, 4)
+            } else if showPendingDot {
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 8, height: 8)
+                    .padding(.trailing, 4)
             }
             
             Image(systemName: "chevron.right")  // Indicador de navegación.
@@ -204,8 +216,4 @@ struct MenuItem: View {
         }
         .padding(.vertical, 10)
     }
-}
-
-#Preview {
-    MenuView()  // Previsualización del menú.
 }

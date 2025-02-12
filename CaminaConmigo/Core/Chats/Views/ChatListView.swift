@@ -155,7 +155,18 @@ struct ChatRowView: View {
                         Text(displayName)
                             .font(.system(size: 16, weight: .medium))
                         Spacer()
-                        // Hora del último mensaje
+                        
+                        // Mostrar contador de mensajes sin leer
+                        if chat.unreadCount > 0 {
+                            Text("\(chat.unreadCount)")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue)
+                                .clipShape(Circle())
+                        }
+                        
                         Text(chat.timeString)
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
