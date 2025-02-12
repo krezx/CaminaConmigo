@@ -34,6 +34,9 @@ struct ChatDetailView: View {
                     }
                     .padding()
                 }
+                .onTapGesture {
+                    hideKeyboard()
+                }
                 
                 // Campo de entrada de mensaje
                 MessageInputField(messageText: $messageText) {
@@ -73,6 +76,10 @@ struct ChatDetailView: View {
                 }
             }
         }
+    }
+    
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 

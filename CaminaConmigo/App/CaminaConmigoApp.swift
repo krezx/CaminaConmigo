@@ -15,6 +15,16 @@ class NavigationState: ObservableObject {
     @Published var selectedTab: Int = 0
     @Published var selectedReportId: String? = nil
     @Published var shouldShowReport: Bool = false
+    @Published var unreadMessagesCount: Int = 0
+    
+    // Agrega un MenuViewModel para escuchar los cambios
+    private let menuViewModel = MenuViewModel()
+    
+    init() {
+        // Suscribirse a los cambios en el contador de mensajes sin leer
+        menuViewModel.$unreadMessagesCount
+            .assign(to: &$unreadMessagesCount)
+    }
 }
 
 /// Clase AppDelegate que conforma el protocolo UIApplicationDelegate.

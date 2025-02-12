@@ -59,7 +59,9 @@ struct MenuView: View {
                             navigationState.selectedTab = 2  // Cambiar a la pestaña de Chats
                         }
                     } label: {
-                        MenuItem(icon: "bubble.left.and.bubble.right", title: "Chats")
+                        MenuItem(icon: "bubble.left.and.bubble.right", 
+                                 title: "Chats",
+                                 badgeCount: viewModel.unreadMessagesCount)
                     }
                     
                     // Enlace a Contactos de Emergencia.

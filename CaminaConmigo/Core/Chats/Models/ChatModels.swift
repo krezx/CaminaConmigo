@@ -10,6 +10,7 @@ struct Chat: Identifiable {
     let timeString: String
     let lastMessageTimestamp: Date
     let adminIds: [String]  // Lista de IDs de los administradores
+    var unreadCount: Int = 0  // Nuevo campo para mensajes sin leer
     
     var dictionary: [String: Any] {
         var dict: [String: Any] = [
@@ -55,6 +56,10 @@ extension Chat {
         let userNames = data["userNames"] as? [String: String] ?? [:]
         let adminIds = data["adminIds"] as? [String] ?? []
         
+        // Corregimos el acceso al contador de mensajes sin leer
+        let unreadCounts = data["unreadCount"] as? [String: Int] ?? [:]
+        let unreadCount = unreadCounts[currentUserId] ?? 0
+        
         // Si hay un nombre de grupo explícito, usarlo
         var name = data["name"] as? String
         
@@ -73,7 +78,8 @@ extension Chat {
             lastMessage: lastMessage,
             timeString: DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .short),
             lastMessageTimestamp: timestamp,
-            adminIds: adminIds
+            adminIds: adminIds,
+            unreadCount: unreadCount
         )
     }
 }
