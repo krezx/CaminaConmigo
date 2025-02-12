@@ -16,7 +16,7 @@ struct ConfigView: View {
     @State private var groupNotifications = true  // Activar/desactivar notificaciones de grupos.
     @State private var reportNotifications = false  // Activar/desactivar notificaciones de reportes.
     @State private var darkMode = false  // Activar/desactivar el modo oscuro.
-    @State private var shakeEnabled = true  // Activar/desactivar la funcionalidad de shake.
+    @AppStorage("shakeEnabled") private var shakeEnabled = true  // Activar/desactivar la funcionalidad de shake.
     
     var body: some View {
         NavigationView {

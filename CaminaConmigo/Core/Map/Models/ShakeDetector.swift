@@ -46,6 +46,11 @@ class ShakeDetector: ObservableObject {
         motionManager.stopAccelerometerUpdates()
     }
     
+    func restartMonitoring() {
+        stopMonitoring()
+        setupShakeDetection()
+    }
+    
     deinit {
         stopMonitoring()
     }

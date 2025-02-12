@@ -21,6 +21,7 @@ struct MapView: View {
     @State private var selectedReport: ReportAnnotation?
     @State private var showEmergencyCall = false
     @State private var showReportDetail = false  // Nuevo estado para controlar la presentación
+    @AppStorage("shakeEnabled") private var shakeEnabled = true  // Agregar esta línea
 
     var body: some View {
         ZStack {
@@ -144,9 +145,21 @@ struct MapView: View {
                 ReportDetailPopupView(report: report, viewModel: reportViewModel)
             }
         }
+        .onChange(of: shakeEnabled) { newValue in
+            if newValue {
+                shakeDetector.restartMonitoring()
+            } else {
+                shakeDetector.stopMonitoring()
+            }
+        }
         .onAppear {
+            if shakeEnabled {
+                shakeDetector.restartMonitoring()
+            }
             shakeDetector.onShakeDetected = {
-                showEmergencyCall = true
+                if shakeEnabled {
+                    showEmergencyCall = true
+                }
             }
         }
         .onDisappear {
