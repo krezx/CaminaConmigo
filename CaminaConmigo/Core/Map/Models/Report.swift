@@ -21,6 +21,7 @@ struct Report: Identifiable, Codable {
     var images: [UIImage] = []
     var timestamp: Date
     var likes: Int = 0
+    var userId: String
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -31,9 +32,10 @@ struct Report: Identifiable, Codable {
         case isAnonymous
         case timestamp
         case likes
+        case userId
     }
     
-    init(id: String? = nil, type: ReportType, description: String, coordinate: CLLocationCoordinate2D? = nil, isAnonymous: Bool = true, likes: Int = 0, timestamp: Date = Date()) {
+    init(id: String? = nil, type: ReportType, description: String, coordinate: CLLocationCoordinate2D? = nil, isAnonymous: Bool = true, likes: Int = 0, timestamp: Date = Date(), userId: String) {
         self.id = id
         self.type = type
         self.description = description
@@ -41,6 +43,7 @@ struct Report: Identifiable, Codable {
         self.isAnonymous = isAnonymous
         self.likes = likes
         self.timestamp = timestamp
+        self.userId = userId
     }
     
     init(from decoder: Decoder) throws {
@@ -51,6 +54,7 @@ struct Report: Identifiable, Codable {
         isAnonymous = try container.decode(Bool.self, forKey: .isAnonymous)
         timestamp = try container.decode(Date.self, forKey: .timestamp)
         likes = try container.decode(Int.self, forKey: .likes)
+        userId = try container.decode(String.self, forKey: .userId)
         
         // Decodificar coordenadas
         if let latitude = try container.decodeIfPresent(Double.self, forKey: .latitude),
@@ -69,6 +73,7 @@ struct Report: Identifiable, Codable {
         try container.encode(isAnonymous, forKey: .isAnonymous)
         try container.encode(timestamp, forKey: .timestamp)
         try container.encode(likes, forKey: .likes)
+        try container.encode(userId, forKey: .userId)
         
         // Codificar coordenadas
         if let coordinate = coordinate {

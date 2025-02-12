@@ -9,6 +9,7 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseStorage
 import CoreLocation
+import FirebaseAuth
 
 /// ViewModel para gestionar la lógica de los reportes.
 class ReportViewModel: ObservableObject {
@@ -60,6 +61,7 @@ class ReportViewModel: ObservableObject {
                       let typeTitle = data["type"] as? String,
                       let description = data["description"] as? String,
                       let timestamp = data["timestamp"] as? Timestamp,
+                      let userId = data["userId"] as? String,
                       let type = self.reportTypes.first(where: { $0.title == typeTitle }) else {
                     return nil
                 }
@@ -72,7 +74,8 @@ class ReportViewModel: ObservableObject {
                     description: description,
                     coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
                     likes: likes,
-                    timestamp: timestamp.dateValue()
+                    timestamp: timestamp.dateValue(),
+                    userId: userId
                 )
                 
                 return ReportAnnotation(report: report)
@@ -86,7 +89,12 @@ class ReportViewModel: ObservableObject {
     /// Maneja el evento cuando un usuario selecciona un tipo de reporte.
     /// - Parameter type: El tipo de reporte seleccionado.
     func handleReport(type: ReportType) {
-        currentReport = Report(type: type, description: "")
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+        currentReport = Report(
+            type: type, 
+            description: "",
+            userId: currentUserId
+        )
         showReportSheet = false
         showReportDetailSheet = true
     }
@@ -95,6 +103,7 @@ class ReportViewModel: ObservableObject {
     func submitReport(image: UIImage?) {
         guard let report = currentReport else { return }
         guard let coordinate = selectedLocation else { return }
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
 
         // Actualizar las coordenadas del reporte actual
         currentReport?.coordinate = coordinate
@@ -106,7 +115,8 @@ class ReportViewModel: ObservableObject {
             "timestamp": Timestamp(date: Date()),
             "latitude": coordinate.latitude,
             "longitude": coordinate.longitude,
-            "likes": 0
+            "likes": 0,
+            "userId": currentUserId
         ]
 
         if let image = image {
@@ -199,21 +209,58 @@ class ReportViewModel: ObservableObject {
     
     /// Agrega un nuevo comentario a un reporte
     func addComment(text: String, reportId: String, authorId: String, authorName: String) {
-        let commentData: [String: Any] = [
-            "text": text,
-            "authorId": authorId,
-            "authorName": authorName,
-            "reportId": reportId,
-            "timestamp": Timestamp(date: Date())
-        ]
-        
-        db.collection("reportes").document(reportId)
-            .collection("comentarios")
-            .addDocument(data: commentData) { error in
-                if let error = error {
-                    print("Error adding comment: \(error.localizedDescription)")
-                }
+        // Primero obtenemos el reporte para saber quién es el autor
+        db.collection("reportes").document(reportId).getDocument { [weak self] document, error in
+            guard let self = self,
+                  let reportData = document?.data(),
+                  let reportAuthorId = reportData["userId"] as? String,
+                  // No enviamos notificación si el autor del comentario es el mismo que el del reporte
+                  reportAuthorId != authorId else {
+                return
             }
+            
+            // Crear el comentario
+            let commentData: [String: Any] = [
+                "text": text,
+                "userId": authorId,
+                "authorName": authorName,
+                "reportId": reportId,
+                "timestamp": Timestamp(date: Date())
+            ]
+            
+            // Guardar el comentario
+            self.db.collection("reportes").document(reportId)
+                .collection("comentarios")
+                .addDocument(data: commentData) { error in
+                    if let error = error {
+                        print("Error adding comment: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    // Crear la notificación para el autor del reporte
+                    let notification = UserNotification(
+                        userId: reportAuthorId,
+                        type: .reportComment,
+                        title: "Nuevo comentario",
+                        message: "\(authorName) comentó en tu reporte: \(text)",
+                        createdAt: Date(),
+                        isRead: false,
+                        data: [
+                            "reportId": reportId,
+                            "commentAuthorId": authorId,
+                            "commentAuthorName": authorName,
+                            "commentText": text
+                        ]
+                    )
+                    
+                    // Guardar la notificación
+                    self.db.collection("users")
+                        .document(reportAuthorId)
+                        .collection("notifications")
+                        .document()
+                        .setData(try! Firestore.Encoder().encode(notification))
+                }
+        }
     }
     
     /// Elimina un comentario específico
