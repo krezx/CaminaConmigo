@@ -15,6 +15,7 @@ struct NovedadView: View {
     @State private var selectedFilter = "Tendencias" // Filtro seleccionado
     @State private var selectedReport: ReportAnnotation?
     @State private var showReportDetail = false
+    @State private var isLoading = false
     private let filters = ["Tendencias", "Recientes", "Ciudad"] // Filtros disponibles para las novedades
     
     var body: some View {
@@ -52,12 +53,11 @@ struct NovedadView: View {
                     ForEach(viewModel.filteredReports) { report in
                         ReporteCard(report: report, viewModel: viewModel)
                             .onTapGesture {
-                                selectedReport = report
-                                showReportDetail = true
+                                handleReportSelection(report)
                             }
                     }
                 }
-                .padding() // Añade espacio alrededor de la lista de reportes
+                .padding()
             }
         }
         .sheet(isPresented: $showReportDetail) {
@@ -65,9 +65,32 @@ struct NovedadView: View {
                 ReportDetailPopupView(report: report, viewModel: viewModel)
             }
         }
+        .overlay {
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.2))
+            }
+        }
         .onAppear {
             viewModel.fetchReports()
             viewModel.filterReports(by: selectedFilter)
+        }
+    }
+    private func handleReportSelection(_ report: ReportAnnotation) {
+        isLoading = true
+        
+        if let reportId = report.report.id {
+            viewModel.fetchSpecificReport(reportId) { updatedReport in
+                if let updatedReport = updatedReport {
+                    selectedReport = ReportAnnotation(report: updatedReport)
+                    showReportDetail = true
+                }
+                isLoading = false
+            }
+        } else {
+            isLoading = false
         }
     }
 }
