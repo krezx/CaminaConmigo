@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 /// Vista que permite a los usuarios configurar las preferencias de la aplicación,
 /// como notificaciones, modo oscuro y la activación del shake para interacciones rápidas.
@@ -15,7 +17,7 @@ struct ConfigView: View {
     
     // Propiedades de estado para manejar las configuraciones de usuario.
     @State private var groupNotifications = true  // Activar/desactivar notificaciones de grupos.
-    @State private var reportNotifications = false  // Activar/desactivar notificaciones de reportes.
+    @AppStorage("reportNotifications") private var reportNotifications = true  // Cambiamos el @State por @AppStorage
     @AppStorage("shakeEnabled") private var shakeEnabled = true  // Activar/desactivar la funcionalidad de shake.
     
     var body: some View {
@@ -57,6 +59,12 @@ struct ConfigView: View {
                         .font(.title2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 5)
+                        .onChange(of: reportNotifications) { newValue in
+                            guard let userId = Auth.auth().currentUser?.uid else { return }
+                            Firestore.firestore().collection("users")
+                                .document(userId)
+                                .setData(["reportNotifications": newValue], merge: true)
+                        }
 
                     // Toggle para habilitar el modo oscuro.
                     Toggle("Modo oscuro", isOn: $isDarkMode)
@@ -82,7 +90,3 @@ struct ConfigView: View {
     }
 }
 
-/// Vista previa para previsualizar la vista de configuración en el canvas de Xcode.
-#Preview {
-    ConfigView()  // Previsualización de la vista de configuración.
-}

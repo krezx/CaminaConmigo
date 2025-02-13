@@ -188,31 +188,38 @@ class ReportViewModel: ObservableObject {
                 .getDocuments { snapshot, error in
                     guard let documents = snapshot?.documents else { return }
                     
-                    // Para cada amigo, crear una notificación
+                    // Para cada amigo, verificar sus preferencias de notificación
                     for doc in documents {
                         let friendId = doc.documentID
                         
-                        let notification = UserNotification(
-                            userId: friendId,
-                            type: .friendReport,
-                            title: "Nuevo reporte de amigo",
-                            message: "\(username) ha reportado un incidente de \(report.type.title)",
-                            createdAt: Date(),
-                            isRead: false,
-                            data: [
-                                "reportId": reportId,
-                                "reportType": report.type.title,
-                                "friendId": currentUserId,
-                                "friendName": username
-                            ]
-                        )
-                        
-                        // Guardar la notificación en Firestore
-                        try? self.db.collection("users")
-                            .document(friendId)
-                            .collection("notifications")
-                            .document()
-                            .setData(from: notification)
+                        // Verificar si el amigo tiene activadas las notificaciones de reportes
+                        self.db.collection("users").document(friendId).getDocument { friendSnapshot, error in
+                            guard let friendData = friendSnapshot?.data(),
+                                let reportNotificationsEnabled = friendData["reportNotifications"] as? Bool,
+                                reportNotificationsEnabled else { return }
+                            
+                            let notification = UserNotification(
+                                userId: friendId,
+                                type: .friendReport,
+                                title: "Nuevo reporte de amigo",
+                                message: "\(username) ha reportado un incidente de \(report.type.title)",
+                                createdAt: Date(),
+                                isRead: false,
+                                data: [
+                                    "reportId": reportId,
+                                    "reportType": report.type.title,
+                                    "friendId": currentUserId,
+                                    "friendName": username
+                                ]
+                            )
+                            
+                            // Guardar la notificación en Firestore solo si las notificaciones están activadas
+                            try? self.db.collection("users")
+                                .document(friendId)
+                                .collection("notifications")
+                                .document()
+                                .setData(from: notification)
+                        }
                     }
                 }
         }

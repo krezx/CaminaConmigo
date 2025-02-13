@@ -272,12 +272,6 @@ struct ChatHeader: View {
                     }
                 }
                 
-                Button(action: {
-                    // Acción para eliminar chat (por implementar)
-                }) {
-                    Label("Eliminar chat", systemImage: "trash")
-                        .foregroundColor(.red)
-                }
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: 22))
