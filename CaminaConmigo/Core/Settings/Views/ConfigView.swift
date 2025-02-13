@@ -11,11 +11,11 @@ import SwiftUI
 /// como notificaciones, modo oscuro y la activación del shake para interacciones rápidas.
 struct ConfigView: View {
     @Environment(\.dismiss) private var dismiss  // Permite cerrar la vista.
+    @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Propiedades de estado para manejar las configuraciones de usuario.
     @State private var groupNotifications = true  // Activar/desactivar notificaciones de grupos.
     @State private var reportNotifications = false  // Activar/desactivar notificaciones de reportes.
-    @State private var darkMode = false  // Activar/desactivar el modo oscuro.
     @AppStorage("shakeEnabled") private var shakeEnabled = true  // Activar/desactivar la funcionalidad de shake.
     
     var body: some View {
@@ -27,9 +27,10 @@ struct ConfigView: View {
                         dismiss()  // Cierra la vista de configuración.
                     }) {
                         Image(systemName: "arrow.left")  // Icono de flecha para regresar.
-                            .foregroundColor(.black)
+                            .foregroundColor(Color.customText)
                             .font(.title2)
                     }
+                    .padding(.leading)
                     
                     Spacer()
                     
@@ -58,10 +59,13 @@ struct ConfigView: View {
                         .padding(.vertical, 5)
 
                     // Toggle para habilitar el modo oscuro.
-                    Toggle("Modo oscuro", isOn: $darkMode)
+                    Toggle("Modo oscuro", isOn: $isDarkMode)
                         .font(.title2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 5)
+                        .onChange(of: isDarkMode) { _ in
+                            // No es necesario hacer nada aquí, el @AppStorage se encarga automáticamente
+                        }
 
                     // Toggle para habilitar el comportamiento de shake.
                     Toggle("Shake", isOn: $shakeEnabled)

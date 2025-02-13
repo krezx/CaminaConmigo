@@ -20,9 +20,10 @@ struct ShareView: View {
                     dismiss()  // Cierra la vista cuando se presiona el botón.
                 }) {
                     Image(systemName: "arrow.left")  // Icono de flecha hacia atrás.
-                        .foregroundColor(.black)
+                        .foregroundColor(Color.customText)
                         .font(.title2)
                 }
+                .padding(.leading)
                 
                 Spacer()
                 

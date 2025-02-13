@@ -27,10 +27,10 @@ struct ProfileView: View {
                         dismiss()
                     }) {
                         Image(systemName: "arrow.left")
-                            .foregroundColor(.black)
+                            .foregroundColor(Color.customText)
                             .font(.title2)
                     }
-                    .padding([.top, .leading], 20)
+                    .padding([.top, .leading])
                     
                     Spacer()
                 }
@@ -67,7 +67,7 @@ struct ProfileView: View {
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: 150, height: 150)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(Color.customText)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -117,10 +117,10 @@ struct ProfileView: View {
                     if let joinDate = viewModel.userProfile?.joinDate {
                         HStack {
                             Image(systemName: "calendar")
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.customText)
                             Text("Miembro desde \(joinDate.formatted(.dateTime.month().year()))")
                                 .font(.footnote)
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.customText)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 10)
@@ -181,17 +181,17 @@ struct ProfileOption: View {
             VStack(alignment: .leading) {
                 Text(title)
                     .font(.title3)
-                    .foregroundColor(.black)
+                    .foregroundColor(Color.customText)
                 Text(value)
                     .font(.title3)
-                    .foregroundColor(.gray)
+                    .foregroundColor(Color.customText.opacity(0.8))
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
+                .foregroundColor(Color.customText)
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(Color.customBackground)
         .cornerRadius(10)
         .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
     }

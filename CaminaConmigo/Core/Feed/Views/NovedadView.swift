@@ -135,9 +135,10 @@ struct ReporteCard: View {
                 VStack(alignment: .leading) {
                     Text(report.report.type.title)
                         .font(.headline)
+                        .foregroundColor(Color.customText)
                     Text("hace " + timeAgoDisplay(date: report.report.timestamp))
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color.customText.opacity(0.8))
                 }
             }
             
@@ -145,6 +146,7 @@ struct ReporteCard: View {
             Text(report.report.description)
                 .lineLimit(3)
                 .padding(.vertical, 4)
+                .foregroundColor(Color.customText)
             
             // Mapa
             Map(coordinateRegion: .constant(region),
@@ -160,18 +162,22 @@ struct ReporteCard: View {
                 Button(action: {}) {
                     Image(systemName: "heart")
                         .bold()
+                        .foregroundColor(Color.customText)
                     Text("\(report.report.likes) Me gusta")
+                        .foregroundColor(Color.customText)
                 }
                 Button(action: {}) {
                     Image(systemName: "bubble.right")
                         .bold()
+                        .foregroundColor(Color.customText)
                     Text("\(commentCount) Comentarios")
+                        .foregroundColor(Color.customText)
                 }
             }
-            .foregroundColor(.black)
+            .foregroundColor(Color.customText)
         }
         .padding()
-        .background(Color.white)
+        .background(Color.customSecondaryBackground)
         .cornerRadius(12)
         .shadow(radius: 2)
         .onAppear {
@@ -216,8 +222,4 @@ struct ReporteCard: View {
             return "hace \(years) \(years == 1 ? "año" : "años")"
         }
     }
-}
-
-#Preview {
-    NovedadView() // Vista previa de NovedadView
 }

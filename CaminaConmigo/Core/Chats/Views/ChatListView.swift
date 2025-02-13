@@ -35,7 +35,7 @@ struct ChatListView: View {
                         .padding(.vertical, 5)
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color.white)
+                .background(Color.customBackground)
                 .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2) // Estilo de sombra para el encabezado
                 
                 // Lista de chats en forma de desplazamiento

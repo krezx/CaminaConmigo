@@ -20,9 +20,9 @@ struct SugerenciasView: View {
                 Button(action: {
                     dismiss()
                 }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.black)
-                        .font(.title3)
+                    Image(systemName: "arrow.left")
+                        .foregroundColor(Color.customText)
+                        .font(.title2)
                 }
                 .padding(.leading)
                 
@@ -35,14 +35,14 @@ struct SugerenciasView: View {
                 Spacer()
                 
                 Button(action: {}) {
-                    Image(systemName: "chevron.left")
+                    Image(systemName: "arrow.left")
                         .foregroundColor(.clear)
                         .font(.title3)
                 }
                 .padding(.trailing)
             }
             .padding(.vertical, 5)
-            .background(Color.white)
+            .background(Color.customBackground)
             .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
             
             Spacer(minLength: 16)
@@ -51,30 +51,31 @@ struct SugerenciasView: View {
                 VStack(spacing: 20) {
                     TextField("Nombre", text: $viewModel.nombre)
                         .padding()
-                        .background(Color.gray.opacity(0.2))
+                        .background(Color.customSecondaryBackground)
                         .cornerRadius(8)
                     
                     TextField("Numero", text: $viewModel.numero)
                         .padding()
-                        .background(Color.gray.opacity(0.2))
+                        .background(Color.customSecondaryBackground)
                         .cornerRadius(8)
                         .keyboardType(.numberPad)
                     
                     TextField("Razón", text: $viewModel.razon)
                         .padding()
-                        .background(Color.gray.opacity(0.2))
+                        .background(Color.customSecondaryBackground)
                         .cornerRadius(8)
                     
                     TextField("Mensaje...", text: $viewModel.mensaje, axis: .vertical)
                         .frame(height: 100, alignment: .top)
                         .padding()
-                        .background(Color.gray.opacity(0.2))
+                        .background(Color.customSecondaryBackground)
                         .cornerRadius(8)
                     
                     HStack {
                         Toggle(isOn: $viewModel.enviarAnonimo) {
                             Text("Enviar de forma Anónima")
                                 .font(.subheadline)
+                                .foregroundColor(Color.customText)
                         }
                         .toggleStyle(CustomCheckboxStyle())
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -107,7 +108,7 @@ struct SugerenciasView: View {
                 }
                 .padding()
             }
-            .background(Color.white)
+            .background(Color.customBackground)
             .gesture(
                 TapGesture()
                     .onEnded { _ in

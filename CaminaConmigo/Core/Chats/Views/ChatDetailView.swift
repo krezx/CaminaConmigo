@@ -179,7 +179,8 @@ struct ChatHeader: View {
                 presentationMode.wrappedValue.dismiss()
             }) {
                 Image(systemName: "arrow.left")
-                    .foregroundColor(Color.black)
+                    .foregroundColor(Color.customText)
+                    .font(.title2)
             }
             
             Circle()
@@ -191,6 +192,7 @@ struct ChatHeader: View {
                 .font(.title)
                 .bold()
                 .padding(.vertical, 5)
+                .foregroundColor(Color.customText)
             
             Spacer()
             
@@ -279,11 +281,11 @@ struct ChatHeader: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: 22))
-                    .foregroundColor(.black)
+                    .foregroundColor(Color.customText)
             }
         }
         .padding(.horizontal)
-        .background(Color.white)
+        .background(Color.customBackground)
         .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
         .alert("Cambiar apodo", isPresented: $showNicknameDialog) {
             TextField("Nuevo apodo", text: $newNickname)
@@ -568,6 +570,6 @@ struct MessageInputField: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(Color.customBackground)
     }
 }

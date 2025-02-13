@@ -39,7 +39,7 @@ struct ReportDetailView: View {
                     dismiss()  // Cierra la vista cuando se presiona.
                 } label: {
                     Image(systemName: "xmark")  // Icono de "X" para cerrar.
-                        .foregroundColor(.black)
+                        .foregroundColor(Color.customText)
                 }
             }
             .padding(.bottom)
@@ -48,7 +48,7 @@ struct ReportDetailView: View {
             ZStack(alignment: .topLeading) {
                 if description.isEmpty {
                     Text("¿Qué sucede?...")  // Placeholder que aparece cuando el campo está vacío.
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color.customText)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 8)
                         .zIndex(1)
@@ -57,7 +57,7 @@ struct ReportDetailView: View {
                 TextEditor(text: $description)  // Editor de texto para la descripción.
                     .frame(height: 100)
                     .padding(4)
-                    .background(Color.white)
+                    .background(Color.customBackground)
             }
             .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))  // Fondo con borde redondeado.
             
@@ -68,13 +68,13 @@ struct ReportDetailView: View {
                 HStack {
                     Image(systemName: "location.fill")  // Icono de ubicación.
                     Text(viewModel.selectedLocation != nil ? "Ubicación seleccionada" : "Seleccionar ubicación")  // Texto del botón.
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color.gray)
                 }
             }
             
             // Toggle para elegir si el reporte es anónimo o no.
             Toggle("Reportar anónimamente", isOn: $isAnonymous)
-                .tint(.purple)
+                .tint(Color(red: 239/255, green: 96/255, blue: 152/255))
             
             // Botones para tomar o seleccionar una foto.
             HStack(spacing: 20) {
@@ -117,7 +117,7 @@ struct ReportDetailView: View {
             }
         }
         .padding()
-        .background(Color.white)  // Fondo blanco para toda la vista.
+        .background(Color.customBackground)  // Fondo blanco para toda la vista.
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(image: $selectedImage)  // Muestra el selector de imágenes cuando está activo.
         }
