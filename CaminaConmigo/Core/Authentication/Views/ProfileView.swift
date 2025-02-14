@@ -13,6 +13,7 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showEditName = false
     @State private var showEditUsername = false
+    @State private var showProfileTypeSelector = false
     @State private var showImagePicker = false
     @State private var selectedImage: UIImage?
     @State private var tempName: String = ""
@@ -106,10 +107,14 @@ struct ProfileView: View {
                             )
                         }
                         
-                        ProfileOption(
-                            title: "Tipo de perfil",
-                            value: viewModel.userProfile?.profileType ?? "Público"
-                        )
+                        Button(action: {
+                            showProfileTypeSelector = true
+                        }) {
+                            ProfileOption(
+                                title: "Tipo de perfil",
+                                value: viewModel.userProfile?.profileType ?? "Público"
+                            )
+                        }
                     }
                     .padding(.top, 20)
                     
@@ -137,6 +142,17 @@ struct ProfileView: View {
                             viewModel.uploadProfileImage(image)
                         }
                     }
+            }
+            .confirmationDialog("Seleccionar tipo de perfil",
+                              isPresented: $showProfileTypeSelector,
+                              titleVisibility: .visible) {
+                Button("Público") {
+                    viewModel.updateProfileType("Público")
+                }
+                Button("Privado") {
+                    viewModel.updateProfileType("Privado")
+                }
+                Button("Cancelar", role: .cancel) {}
             }
             .alert("Editar nombre", isPresented: $showEditName) {
                 TextField("Nombre", text: $tempName)
