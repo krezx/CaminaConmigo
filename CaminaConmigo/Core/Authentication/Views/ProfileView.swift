@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
@@ -18,6 +19,7 @@ struct ProfileView: View {
     @State private var selectedImage: UIImage?
     @State private var tempName: String = ""
     @State private var tempUsername: String = ""
+    @State private var selectedItem: PhotosPickerItem?
     
     var body: some View {
         NavigationView {
@@ -42,36 +44,45 @@ struct ProfileView: View {
                 } else {
                     // Foto de perfil
                     VStack {
-                        Button(action: {
-                            showImagePicker = true
-                        }) {
-                            if let selectedImage = selectedImage {
-                                Image(uiImage: selectedImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 150, height: 150)
-                                    .clipShape(Circle())
-                            } else if let photoURL = viewModel.userProfile?.photoURL,
-                                    let url = URL(string: photoURL) {
-                                AsyncImage(url: url) { image in
-                                    image
+                        PhotosPicker(selection: $selectedItem,
+                                    matching: .images) {
+                            VStack {
+                                if let selectedImage = selectedImage {
+                                    Image(uiImage: selectedImage)
                                         .resizable()
                                         .scaledToFill()
                                         .frame(width: 150, height: 150)
                                         .clipShape(Circle())
-                                } placeholder: {
-                                    ProgressView()
+                                } else if let photoURL = viewModel.userProfile?.photoURL,
+                                        let url = URL(string: photoURL) {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 150, height: 150)
+                                            .clipShape(Circle())
+                                    } placeholder: {
+                                        ProgressView()
+                                            .frame(width: 150, height: 150)
+                                    }
+                                } else {
+                                    Image(systemName: "person.circle")
+                                        .resizable()
+                                        .scaledToFit()
                                         .frame(width: 150, height: 150)
+                                        .foregroundColor(Color.customText)
                                 }
-                            } else {
-                                Image(systemName: "person.circle")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 150, height: 150)
-                                    .foregroundColor(Color.customText)
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .onChange(of: selectedItem) { newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    selectedImage = image
+                                    viewModel.uploadProfileImage(image)
+                                }
+                            }
+                        }
                         
                         Button(action: {
                             showImagePicker = true
@@ -135,14 +146,6 @@ struct ProfileView: View {
                 }
             }
             .padding(.horizontal)
-            .sheet(isPresented: $showImagePicker) {
-                SingleImagePicker(image: $selectedImage)
-                    .onChange(of: selectedImage) { newImage in
-                        if let image = newImage {
-                            viewModel.uploadProfileImage(image)
-                        }
-                    }
-            }
             .confirmationDialog("Seleccionar tipo de perfil",
                               isPresented: $showProfileTypeSelector,
                               titleVisibility: .visible) {
