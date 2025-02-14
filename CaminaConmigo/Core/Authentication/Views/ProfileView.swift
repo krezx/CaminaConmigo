@@ -20,6 +20,7 @@ struct ProfileView: View {
     @State private var tempName: String = ""
     @State private var tempUsername: String = ""
     @State private var selectedItem: PhotosPickerItem?
+    @State private var showImageOptions = false
     
     var body: some View {
         NavigationView {
@@ -72,6 +73,14 @@ struct ProfileView: View {
                                         .frame(width: 150, height: 150)
                                         .foregroundColor(Color.customText)
                                 }
+                            }
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                viewModel.removeProfilePhoto()
+                                selectedImage = nil
+                            } label: {
+                                Label("Eliminar foto", systemImage: "trash")
                             }
                         }
                         .onChange(of: selectedItem) { newItem in

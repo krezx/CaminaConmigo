@@ -183,4 +183,11 @@ class ProfileViewModel: ObservableObject {
         // Si no hay documentos, el username está disponible
         return snapshot.documents.isEmpty
     }
+    
+    func removeProfilePhoto() {
+        guard var profile = userProfile else { return }
+        profile.photoURL = nil
+        userProfile = profile
+        saveProfile()
+    }
 }

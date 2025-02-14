@@ -183,9 +183,15 @@ struct ChatHeader: View {
                     .font(.title2)
             }
             
-            Circle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 40, height: 40)
+            if chat.participants.count == 2,
+               let currentUserId = Auth.auth().currentUser?.uid,
+               let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+                ProfileImageView(userId: otherUserId, size: 40)
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 40, height: 40)
+            }
             
             Text(displayName)
                 .lineLimit(1)

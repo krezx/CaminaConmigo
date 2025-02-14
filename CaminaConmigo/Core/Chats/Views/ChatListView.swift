@@ -145,9 +145,15 @@ struct ChatRowView: View {
         NavigationLink(destination: ChatDetailView(chat: chat)) {
             HStack(spacing: 12) {
                 // Imagen de perfil del chat (simulada aquí con un círculo gris)
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 50, height: 50)
+                if chat.participants.count == 2,
+                   let currentUserId = Auth.auth().currentUser?.uid,
+                   let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+                    ProfileImageView(userId: otherUserId, size: 50)
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 50, height: 50)
+                }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -204,6 +210,47 @@ struct ChatRowView: View {
                     } catch {
                         print("Error al cargar el nickname: \(error.localizedDescription)")
                     }
+                }
+            }
+        }
+    }
+}
+
+struct ProfileImageView: View {
+    let userId: String
+    let size: CGFloat
+    @State private var photoURL: String?
+    
+    var body: some View {
+        Group {
+            if let photoURL = photoURL, let url = URL(string: photoURL) {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    ProgressView()
+                }
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .foregroundColor(.gray)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .onAppear {
+            loadProfilePhoto()
+        }
+    }
+    
+    private func loadProfilePhoto() {
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            if let data = snapshot?.data(),
+               let photoURL = data["photoURL"] as? String {
+                DispatchQueue.main.async {
+                    self.photoURL = photoURL
                 }
             }
         }

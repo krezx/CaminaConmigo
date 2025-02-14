@@ -11,6 +11,7 @@ struct Chat: Identifiable {
     let lastMessageTimestamp: Date
     let adminIds: [String]  // Lista de IDs de los administradores
     var unreadCount: Int = 0  // Nuevo campo para mensajes sin leer
+    let participantPhotos: [String: String]
     
     var dictionary: [String: Any] {
         var dict: [String: Any] = [
@@ -18,7 +19,8 @@ struct Chat: Identifiable {
             "name": name,
             "lastMessage": lastMessage,
             "lastMessageTimestamp": Timestamp(date: lastMessageTimestamp),
-            "adminIds": adminIds
+            "adminIds": adminIds,
+            "participantPhotos": participantPhotos
         ]
         
         return dict
@@ -71,6 +73,8 @@ extension Chat {
             name = "Grupo sin nombre"
         }
         
+        let participantPhotos = data["participantPhotos"] as? [String: String] ?? [:]
+        
         return Chat(
             id: document.documentID,
             participants: participants,
@@ -79,7 +83,8 @@ extension Chat {
             timeString: DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .short),
             lastMessageTimestamp: timestamp,
             adminIds: adminIds,
-            unreadCount: unreadCount
+            unreadCount: unreadCount,
+            participantPhotos: participantPhotos
         )
     }
 }

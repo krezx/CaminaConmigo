@@ -183,7 +183,8 @@ struct NotificationRow: View {
                     lastMessage: "",
                     timeString: "",
                     lastMessageTimestamp: Date(),
-                    adminIds: []
+                    adminIds: [],
+                    participantPhotos: [:]
                 ))
             } else {
                 EmptyView()
