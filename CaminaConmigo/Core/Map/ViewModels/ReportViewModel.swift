@@ -102,15 +102,14 @@ class ReportViewModel: ObservableObject {
     }
     
     /// Envía el reporte al servidor o sistema de backend.
-    func submitReport(image: UIImage?) {
+    func submitReport(images: [UIImage]) {
         guard let report = currentReport else { return }
         guard let coordinate = selectedLocation else { return }
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
-
-        // Actualizar las coordenadas del reporte actual
+        
         currentReport?.coordinate = coordinate
-
-        let reportData: [String: Any] = [
+        
+        var reportData: [String: Any] = [
             "type": report.type.title,
             "description": report.description,
             "isAnonymous": report.isAnonymous,
@@ -118,49 +117,59 @@ class ReportViewModel: ObservableObject {
             "latitude": coordinate.latitude,
             "longitude": coordinate.longitude,
             "likes": 0,
-            "userId": currentUserId
+            "userId": currentUserId,
+            "imageUrls": []
         ]
-
-        if let image = image {
-            uploadImage(image) { url in
-                var data = reportData
-                data["imageUrl"] = url?.absoluteString ?? ""
-                self.saveReportData(data) { reportId in
-                    if !report.isAnonymous {
-                        self.notifyFriends(reportId: reportId, report: report)
-                    }
-                }
-            }
-        } else {
+        
+        if images.isEmpty {
             saveReportData(reportData) { reportId in
                 if !report.isAnonymous {
                     self.notifyFriends(reportId: reportId, report: report)
                 }
             }
+        } else {
+            uploadImages(images) { urls in
+                reportData["imageUrls"] = urls
+                self.saveReportData(reportData) { reportId in
+                    if !report.isAnonymous {
+                        self.notifyFriends(reportId: reportId, report: report)
+                    }
+                }
+            }
         }
     }
-
-    private func uploadImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            completion(nil)
-            return
-        }
+    
+    private func uploadImages(_ images: [UIImage], completion: @escaping ([String]) -> Void) {
+        let group = DispatchGroup()
+        var urls: [String] = []
         
-        let storageRef = storage.reference().child("report_images/\(UUID().uuidString).jpg")
-        storageRef.putData(imageData, metadata: nil) { _, error in
-            if let error = error {
-                print("Error uploading image: \(error.localizedDescription)")
-                completion(nil)
-                return
+        for image in images {
+            group.enter()
+            
+            guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                group.leave()
+                continue
             }
-            storageRef.downloadURL { url, error in
+            
+            let storageRef = storage.reference().child("report_images/\(UUID().uuidString).jpg")
+            storageRef.putData(imageData, metadata: nil) { _, error in
                 if let error = error {
-                    print("Error getting download URL: \(error.localizedDescription)")
-                    completion(nil)
+                    print("Error uploading image: \(error.localizedDescription)")
+                    group.leave()
                     return
                 }
-                completion(url)
+                
+                storageRef.downloadURL { url, error in
+                    if let url = url {
+                        urls.append(url.absoluteString)
+                    }
+                    group.leave()
+                }
             }
+        }
+        
+        group.notify(queue: .main) {
+            completion(urls)
         }
     }
 

@@ -131,7 +131,7 @@ struct ProfileView: View {
             }
             .padding(.horizontal)
             .sheet(isPresented: $showImagePicker) {
-                ImagePicker(image: $selectedImage)
+                SingleImagePicker(image: $selectedImage)
                     .onChange(of: selectedImage) { newImage in
                         if let image = newImage {
                             viewModel.uploadProfileImage(image)
@@ -194,11 +194,5 @@ struct ProfileOption: View {
         .background(Color.customBackground)
         .cornerRadius(10)
         .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
-    }
-}
-
-struct ProfileView_Previews: PreviewProvider {
-    static var previews: some View {
-        ProfileView()
     }
 }
