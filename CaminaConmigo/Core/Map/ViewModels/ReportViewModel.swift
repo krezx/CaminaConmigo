@@ -67,12 +67,14 @@ class ReportViewModel: ObservableObject {
                 }
                 
                 let likes = data["likes"] as? Int ?? 0
+                let isAnonymous = data["isAnonymous"] as? Bool ?? false // Agregamos esta línea
                 
                 let report = Report(
                     id: document.documentID,
                     type: type,
                     description: description,
                     coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                    isAnonymous: isAnonymous,
                     likes: likes,
                     timestamp: timestamp.dateValue(),
                     userId: userId
@@ -463,18 +465,38 @@ class ReportViewModel: ObservableObject {
             }
             
             let likes = data["likes"] as? Int ?? 0
+            let isAnonymous = data["isAnonymous"] as? Bool ?? true
             
             let report = Report(
                 id: document.documentID,
                 type: type,
                 description: description,
                 coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                isAnonymous: isAnonymous,
                 likes: likes,
                 timestamp: timestamp.dateValue(),
                 userId: userId
             )
             
             completion(report)
+        }
+    }
+
+    /// Obtiene el nombre de usuario del autor del reporte
+    func fetchAuthorUsername(userId: String, completion: @escaping (String?) -> Void) {
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("Error fetching author username: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            if let data = snapshot?.data(),
+               let username = data["username"] as? String {
+                completion(username)
+            } else {
+                completion(nil)
+            }
         }
     }
 }

@@ -82,9 +82,13 @@ struct NovedadView: View {
         isLoading = true
         
         if let reportId = report.report.id {
+            print("Selected report userId: \(report.report.userId)") // Depuración
             viewModel.fetchSpecificReport(reportId) { updatedReport in
                 if let updatedReport = updatedReport {
-                    selectedReport = ReportAnnotation(report: updatedReport)
+                    // Preservar el campo isAnonymous del reporte original
+                    var modifiedReport = updatedReport
+                    modifiedReport.isAnonymous = report.report.isAnonymous
+                    selectedReport = ReportAnnotation(report: modifiedReport)
                     showReportDetail = true
                 }
                 isLoading = false
@@ -135,6 +139,7 @@ struct ReporteCard: View {
     let report: ReportAnnotation
     @State private var region: MKCoordinateRegion
     @State private var commentCount: Int = 0
+    @State private var authorUsername: String?
     @ObservedObject var viewModel: ReportViewModel
     
     init(report: ReportAnnotation, viewModel: ReportViewModel) {
@@ -148,7 +153,7 @@ struct ReporteCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header con icono y tipo de reporte
+            // Header con icono, tipo de reporte y autor
             HStack {
                 Image(report.report.type.imageName)
                     .resizable()
@@ -159,9 +164,17 @@ struct ReporteCard: View {
                     Text(report.report.type.title)
                         .font(.headline)
                         .foregroundColor(Color.customText)
-                    Text("hace " + timeAgoDisplay(date: report.report.timestamp))
-                        .font(.caption)
-                        .foregroundColor(Color.customText.opacity(0.8))
+                    
+                    HStack {
+                        if !report.report.isAnonymous, let username = authorUsername {
+                            Text("por \(username)")
+                                .font(.subheadline)
+                                .foregroundColor(Color.customText.opacity(0.8))
+                        }
+                        Text("hace " + timeAgoDisplay(date: report.report.timestamp))
+                            .font(.caption)
+                            .foregroundColor(Color.customText.opacity(0.8))
+                    }
                 }
             }
             
@@ -207,6 +220,13 @@ struct ReporteCard: View {
             if let reportId = report.report.id {
                 viewModel.getCommentCount(for: reportId) { count in
                     commentCount = count
+                }
+                
+                // Obtener el nombre del autor si el reporte no es anónimo
+                if !report.report.isAnonymous {
+                    viewModel.fetchAuthorUsername(userId: report.report.userId) { username in
+                        authorUsername = username
+                    }
                 }
             }
         }

@@ -158,6 +158,7 @@ struct ReportDetailPopupView: View {
     @State private var showLoginAlert = false
     @State private var navigateToLogin = false
     @State private var likesCount: Int = 0
+    @State private var authorUsername: String?
     
     let demoImages = ["demo_image1", "demo_image2"]
     
@@ -175,7 +176,17 @@ struct ReportDetailPopupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     ReportHeaderView(report: report)
-                    
+
+                    // Mostrar el username del autor si no es anónimo
+                    if !report.report.isAnonymous, let username = authorUsername {
+                        HStack {
+                            Text("Reportado por: \(username)")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal)
+                    }
+
                     CarouselView(
                         report: report,
                         region: region,
@@ -222,6 +233,14 @@ struct ReportDetailPopupView: View {
                     if let userId = authViewModel.userSession?.uid {
                         viewModel.checkLikeStatus(for: reportId, userId: userId) { isLiked in
                             liked = isLiked
+                        }
+                    }
+                    
+                    // Fetch author username if report is not anonymous
+                    if !report.report.isAnonymous {
+                        viewModel.fetchAuthorUsername(userId: report.report.userId) { username in
+                        print("Fetched username: \(username ?? "nil")") // Depuración
+                            authorUsername = username
                         }
                     }
                 }
