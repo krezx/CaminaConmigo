@@ -28,11 +28,69 @@ struct ReportHeaderView: View {
     }
 }
 
+// Vista para imagen en pantalla completa
+struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: String
+}
+
+struct FullScreenImageView: View {
+    let imageUrl: String
+    @Environment(\.dismiss) var dismiss
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @GestureState private var magnifyBy = CGFloat(1.0)
+    
+    var body: some View {
+        GeometryReader { geometry in
+            AsyncImage(url: URL(string: imageUrl)) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .scaleEffect(scale * magnifyBy)
+                        .gesture(
+                            MagnificationGesture()
+                                .updating($magnifyBy) { currentState, gestureState, _ in
+                                    gestureState = currentState
+                                }
+                                .onEnded { value in
+                                    scale *= value
+                                    scale = min(max(scale, 1), 4)
+                                }
+                        )
+                case .failure(_):
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.red)
+                @unknown default:
+                    EmptyView()
+                }
+            }
+        }
+        .edgesIgnoringSafeArea(.all)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Cerrar") {
+                    dismiss()
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
 // Vista para el carrusel de imágenes y mapa
 struct CarouselView: View {
     let report: ReportAnnotation
     let region: MKCoordinateRegion
     @Binding var currentImageIndex: Int
+    @State private var selectedImageUrl: IdentifiableURL?
+    @State private var showFullScreenImage = false
     
     var body: some View {
         VStack {
@@ -53,6 +111,9 @@ struct CarouselView: View {
                                 image
                                     .resizable()
                                     .scaledToFill()
+                                    .onTapGesture {
+                                        selectedImageUrl = IdentifiableURL(url: url)
+                                    }
                             case .failure(_):
                                 Image(systemName: "exclamationmark.triangle")
                                     .foregroundColor(.red)
@@ -82,6 +143,11 @@ struct CarouselView: View {
                     }
                 }
                 .padding(.top, 8)
+            }
+        }
+        .fullScreenCover(item: $selectedImageUrl) { identifiableUrl in
+            NavigationView {
+                FullScreenImageView(imageUrl: identifiableUrl.url)
             }
         }
     }
