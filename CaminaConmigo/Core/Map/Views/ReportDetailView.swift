@@ -19,6 +19,7 @@ struct ReportDetailView: View {
     @State private var showImagePicker = false  // Controla si se debe mostrar el selector de imagen.
     @State private var selectedImages: [UIImage] = []  // Imágenes seleccionadas para el reporte.
     @State private var showMapPicker = false  // Controla si se debe mostrar el selector de mapa.
+    @State private var showCamera = false  // Controla si se debe mostrar la cámara
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -108,11 +109,20 @@ struct ReportDetailView: View {
             HStack(spacing: 20) {
                 Spacer()
                 Button {
+                    showCamera = true
+                } label: {
+                    HStack {
+                        Image(systemName: "camera")
+                        Text("Tomar foto")
+                    }
+                }
+                
+                Button {
                     showImagePicker = true
                 } label: {
                     HStack {
                         Image(systemName: "photo")
-                        Text("Agregar fotos")
+                        Text("Seleccionar fotos")
                     }
                 }
                 Spacer()
@@ -140,6 +150,9 @@ struct ReportDetailView: View {
         .background(Color.customBackground)  // Fondo blanco para toda la vista.
         .sheet(isPresented: $showImagePicker) {
             MultiImagePicker(images: $selectedImages)
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraView(images: $selectedImages)
         }
         .sheet(isPresented: $showMapPicker) {
             MapPickerView(selectedLocation: $viewModel.selectedLocation, viewModel: viewModel)
