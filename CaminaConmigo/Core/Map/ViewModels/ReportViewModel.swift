@@ -67,9 +67,10 @@ class ReportViewModel: ObservableObject {
                 }
                 
                 let likes = data["likes"] as? Int ?? 0
-                let isAnonymous = data["isAnonymous"] as? Bool ?? false // Agregamos esta línea
+                let isAnonymous = data["isAnonymous"] as? Bool ?? false
+                let imageUrls = data["imageUrls"] as? [String] ?? []
                 
-                let report = Report(
+                var report = Report(
                     id: document.documentID,
                     type: type,
                     description: description,
@@ -79,6 +80,7 @@ class ReportViewModel: ObservableObject {
                     timestamp: timestamp.dateValue(),
                     userId: userId
                 )
+                report.imageUrls = imageUrls
                 
                 return ReportAnnotation(report: report)
             }
@@ -475,8 +477,9 @@ class ReportViewModel: ObservableObject {
             
             let likes = data["likes"] as? Int ?? 0
             let isAnonymous = data["isAnonymous"] as? Bool ?? true
+            let imageUrls = data["imageUrls"] as? [String] ?? []
             
-            let report = Report(
+            var report = Report(
                 id: document.documentID,
                 type: type,
                 description: description,
@@ -486,6 +489,7 @@ class ReportViewModel: ObservableObject {
                 timestamp: timestamp.dateValue(),
                 userId: userId
             )
+            report.imageUrls = imageUrls
             
             completion(report)
         }

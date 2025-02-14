@@ -33,7 +33,6 @@ struct CarouselView: View {
     let report: ReportAnnotation
     let region: MKCoordinateRegion
     @Binding var currentImageIndex: Int
-    let demoImages: [String]
     
     var body: some View {
         VStack {
@@ -44,31 +43,46 @@ struct CarouselView: View {
                 .frame(height: 200)
                 .tag(0)
                 
-                ForEach(0..<demoImages.count, id: \.self) { index in
-                    Image(demoImages[index])
-                        .resizable()
-                        .scaledToFill()
+                if !report.report.imageUrls.isEmpty {
+                    ForEach(Array(report.report.imageUrls.enumerated()), id: \.element) { index, url in
+                        AsyncImage(url: URL(string: url)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            case .failure(_):
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.red)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
                         .frame(height: 200)
                         .clipped()
                         .tag(index + 1)
+                    }
                 }
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never)) // Oculta el indicador de página del TabView
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .frame(height: 200)
 
             // Indicadores de página manualmente interactivos
-            HStack {
-                ForEach(0..<demoImages.count + 1, id: \.self) { index in
-                    Circle()
-                        .fill(index == currentImageIndex ? Color.blue : Color.gray)
-                        .frame(width: 8, height: 8)
-                        .onTapGesture {
-                            // Cambia el índice actual al que se ha tocado
-                            currentImageIndex = index
-                        }
+            if !report.report.imageUrls.isEmpty {
+                HStack {
+                    ForEach(0..<(report.report.imageUrls.count + 1), id: \.self) { index in
+                        Circle()
+                            .fill(index == currentImageIndex ? Color.blue : Color.gray)
+                            .frame(width: 8, height: 8)
+                            .onTapGesture {
+                                currentImageIndex = index
+                            }
+                    }
                 }
+                .padding(.top, 8)
             }
-            .padding(.top, 8) // Espaciado entre el TabView y el indicador
         }
     }
 }
@@ -160,8 +174,6 @@ struct ReportDetailPopupView: View {
     @State private var likesCount: Int = 0
     @State private var authorUsername: String?
     
-    let demoImages = ["demo_image1", "demo_image2"]
-    
     init(report: ReportAnnotation, viewModel: ReportViewModel) {
         self.report = report
         self.viewModel = viewModel
@@ -190,8 +202,7 @@ struct ReportDetailPopupView: View {
                     CarouselView(
                         report: report,
                         region: region,
-                        currentImageIndex: $currentImageIndex,
-                        demoImages: demoImages
+                        currentImageIndex: $currentImageIndex
                     )
                     
                     Text(report.report.description)
