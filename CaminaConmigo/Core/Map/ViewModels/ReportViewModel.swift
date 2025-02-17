@@ -22,6 +22,7 @@ class ReportViewModel: ObservableObject {
     @Published var isLoadingComments = false
     @Published var filteredReports: [ReportAnnotation] = []
     @Published var selectedFilter: String = "Tendencias"
+    @Published var selectedAddress: String = "Seleccionar ubicación"
 
     private let db = Firestore.firestore()
     private let storage = Storage.storage()

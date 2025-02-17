@@ -20,6 +20,7 @@ struct ReportDetailView: View {
     @State private var selectedImages: [UIImage] = []  // Imágenes seleccionadas para el reporte.
     @State private var showMapPicker = false  // Controla si se debe mostrar el selector de mapa.
     @State private var showCamera = false  // Controla si se debe mostrar la cámara
+    @State private var selectedAddress: String = "Seleccionar ubicación"
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -67,8 +68,8 @@ struct ReportDetailView: View {
                 showMapPicker = true  // Muestra el selector de mapa al presionar.
             } label: {
                 HStack {
-                    Image(systemName: "location.fill")  // Icono de ubicación.
-                    Text(viewModel.selectedLocation != nil ? "Ubicación seleccionada" : "Seleccionar ubicación")  // Texto del botón.
+                    Image(systemName: "location.fill")
+                    Text(selectedAddress)
                         .foregroundColor(Color.gray)
                 }
             }
@@ -155,7 +156,11 @@ struct ReportDetailView: View {
             CameraView(images: $selectedImages)
         }
         .sheet(isPresented: $showMapPicker) {
-            MapPickerView(selectedLocation: $viewModel.selectedLocation, viewModel: viewModel)
+            MapPickerView(
+                selectedLocation: $viewModel.selectedLocation,
+                selectedAddress: $selectedAddress,
+                viewModel: viewModel
+            )
         }
     }
 }
