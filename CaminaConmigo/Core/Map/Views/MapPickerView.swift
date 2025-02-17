@@ -17,6 +17,7 @@ struct MapPickerView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var centerCoordinate: CLLocationCoordinate2D?
     @State private var isGettingAddress = false
+    @State private var searchLocation: CLLocationCoordinate2D?
     
     func getAddressFromCoordinate(_ coordinate: CLLocationCoordinate2D) {
         isGettingAddress = true
@@ -53,7 +54,8 @@ struct MapPickerView: View {
                 locationManager: locationManager,
                 centerCoordinate: $centerCoordinate,
                 viewModel: viewModel,
-                selectedReport: .constant(nil)
+                selectedReport: .constant(nil),
+                searchLocation: $searchLocation
             )
             VStack {
                 Spacer()

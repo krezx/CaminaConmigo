@@ -18,6 +18,7 @@ struct MapViewRepresentable: UIViewRepresentable {
     @Binding var centerCoordinate: CLLocationCoordinate2D?
     @ObservedObject var viewModel: ReportViewModel
     @Binding var selectedReport: ReportAnnotation?
+    @Binding var searchLocation: CLLocationCoordinate2D?
     
     /// Crea la vista del mapa para ser utilizada en SwiftUI.
     ///
@@ -32,7 +33,11 @@ struct MapViewRepresentable: UIViewRepresentable {
         // Gestor de gestos para detectar cuando el usuario mueve el mapa
         let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(MapCoordinator.handleMapPan(_:)))
         
+        // Agregar gesto de toque
+        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(MapCoordinator.handleMapTap(_:)))
+        
         mapView.addGestureRecognizer(panGesture)
+        mapView.addGestureRecognizer(tapGesture)
         
         return mapView  // Devuelve la vista del mapa para mostrarla en la interfaz.
     }
@@ -43,6 +48,24 @@ struct MapViewRepresentable: UIViewRepresentable {
     /// - Parameter context: El contexto que permite la comunicación con SwiftUI.
     func updateUIView(_ uiView: MKMapView, context: Context) {
         updateAnnotations(in: uiView)
+        
+        // Actualizar el pin de búsqueda
+        if let searchLocation = searchLocation {
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = searchLocation
+            
+            // Remover pins de búsqueda anteriores
+            uiView.removeAnnotations(uiView.annotations.filter { $0 is MKPointAnnotation })
+            
+            uiView.addAnnotation(annotation)
+            
+            // Centrar el mapa en la ubicación buscada
+            let region = MKCoordinateRegion(
+                center: searchLocation,
+                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            )
+            uiView.setRegion(region, animated: true)
+        }
     }
     
     private func updateAnnotations(in mapView: MKMapView) {
@@ -104,6 +127,14 @@ extension MapViewRepresentable {
                         updateCenterCoordinate()
                     }
                 }
+        
+        @objc func handleMapTap(_ gesture: UITapGestureRecognizer) {
+            // Limpiar la ubicación de búsqueda y remover el pin
+            DispatchQueue.main.async {
+                self.parent.searchLocation = nil
+                self.parent.mapView.removeAnnotations(self.parent.mapView.annotations.filter { $0 is MKPointAnnotation })
+            }
+        }
         
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
             guard let reportAnnotation = annotation as? ReportAnnotation else { return nil }

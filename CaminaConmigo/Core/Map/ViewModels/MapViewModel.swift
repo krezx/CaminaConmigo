@@ -10,43 +10,60 @@ import MapKit
 import FirebaseFirestore
 
 /// ViewModel para gestionar la lógica de la vista del mapa.
-class MapViewModel: ObservableObject {
-    // @Published var reports: [ReportAnnotation] = []
-    // @Published var selectedReport: ReportAnnotation?
-    // @Published var showReportDetail: Bool = false
+class MapViewModel: NSObject, ObservableObject {
+    @Published var searchResults: [MKLocalSearchCompletion] = []
+    @Published var searchLocation: CLLocationCoordinate2D?
+    @Published var isSearchActive: Bool = false
     
-    // private let db = Firestore.firestore()
+    private let searchCompleter = MKLocalSearchCompleter()
     
-    // init() {
-    //     fetchReports()
-    // }
+    override init() {
+        super.init()
+        searchCompleter.delegate = self
+        searchCompleter.resultTypes = .address
+    }
     
-    // func fetchReports() {
-    //     db.collection("reports").addSnapshotListener { [weak self] querySnapshot, error in
-    //         guard let documents = querySnapshot?.documents else {
-    //             print("Error fetching reports: \(error?.localizedDescription ?? "Unknown error")")
-    //             return
-    //         }
+    func searchAddress(_ query: String) {
+        if query.isEmpty {
+            searchResults = []
+            clearSearch()
+            return
+        }
+        searchCompleter.queryFragment = query
+    }
+    
+    func selectSearchResult(_ result: MKLocalSearchCompletion) {
+        let searchRequest = MKLocalSearch.Request(completion: result)
+        let search = MKLocalSearch(request: searchRequest)
+        
+        search.start { [weak self] response, error in
+            guard let coordinate = response?.mapItems.first?.placemark.coordinate else {
+                return
+            }
             
-    //         self?.reports = documents.compactMap { document -> ReportAnnotation? in
-    //             do {
-    //                 let report = try document.data(as: Report.self)
-    //                 return ReportAnnotation(report: report)
-    //             } catch {
-    //                 print("Error decoding report: \(error.localizedDescription)")
-    //                 return nil
-    //             }
-    //         }
-    //     }
-    // }
+            DispatchQueue.main.async {
+                self?.searchLocation = coordinate
+                self?.searchResults = []
+                self?.isSearchActive = true
+            }
+        }
+    }
     
-    // func selectReport(_ report: ReportAnnotation) {
-    //     selectedReport = report
-    //     showReportDetail = true
-    // }
+    func clearSearch() {
+        searchLocation = nil
+        searchResults = []
+        isSearchActive = false
+    }
+}
+
+extension MapViewModel: MKLocalSearchCompleterDelegate {
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        DispatchQueue.main.async {
+            self.searchResults = completer.results
+        }
+    }
     
-    // func closeReportDetail() {
-    //     selectedReport = nil
-    //     showReportDetail = false
-    // }
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        print("Error en la búsqueda: \(error.localizedDescription)")
+    }
 }
