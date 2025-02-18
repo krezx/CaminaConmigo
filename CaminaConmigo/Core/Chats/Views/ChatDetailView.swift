@@ -105,6 +105,7 @@ struct ChatHeader: View {
     @State private var availableFriends: [UserProfile] = []
     @State private var showLocationSharingAlert = false
     @State private var isShareingLocation = false
+    @StateObject private var locationViewModel = LocationSharingViewModel()
 
     private var isAdmin: Bool {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return false }
@@ -425,7 +426,15 @@ struct ChatHeader: View {
         .alert("Compartir ubicación", isPresented: $showLocationSharingAlert) {
             Button(isShareingLocation ? "Dejar de compartir" : "Compartir", role: isShareingLocation ? .destructive : .none) {
                 isShareingLocation.toggle()
-                // Aquí implementarías la lógica para comenzar/detener el compartir ubicación
+                if isShareingLocation {
+                    locationViewModel.startSharingLocation(in: chat.id)
+                    // Enviar mensaje de sistema indicando que se está compartiendo ubicación
+                    chatViewModel.sendMessage("Comenzó a compartir su ubicación", in: chat.id)
+                } else {
+                    locationViewModel.stopSharingLocation(in: chat.id)
+                    // Enviar mensaje de sistema indicando que se dejó de compartir ubicación
+                    chatViewModel.sendMessage("Dejó de compartir su ubicación", in: chat.id)
+                }
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
@@ -477,6 +486,13 @@ struct ChatHeader: View {
                 }
             }
         }
+        .onDisappear {
+            // Asegurarnos de detener el compartir ubicación cuando se cierra el chat
+            if isShareingLocation {
+                locationViewModel.stopSharingLocation(in: chat.id)
+                isShareingLocation = false
+            }
+        }
     }
 }
 
@@ -486,6 +502,7 @@ struct MessageBubble: View {
     let chat: Chat // Añadimos referencia al chat
     @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var senderName: String = ""
+    @StateObject private var locationViewModel = LocationSharingViewModel()
     
     private var isFromCurrentUser: Bool {
         message.senderId == Auth.auth().currentUser?.uid
@@ -503,11 +520,25 @@ struct MessageBubble: View {
                     .padding(.horizontal, 4)
             }
             
-            Text(message.content)
-                .padding(12)
-                .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
-                .foregroundColor(isFromCurrentUser ? .white : .black)
-                .cornerRadius(16)
+            if message.content.contains("Comenzó a compartir su ubicación") {
+                // Iniciar escucha de actualizaciones de ubicación
+                Text(message.content)
+                    .padding(12)
+                    .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
+                    .foregroundColor(isFromCurrentUser ? .white : .black)
+                    .cornerRadius(16)
+                
+                if let locationMessage = locationViewModel.activeLocationSharing[message.senderId] {
+                    SharedLocationMapView(locationMessage: locationMessage)
+                        .frame(height: 200)
+                }
+            } else {
+                Text(message.content)
+                    .padding(12)
+                    .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
+                    .foregroundColor(isFromCurrentUser ? .white : .black)
+                    .cornerRadius(16)
+            }
             
             Text(DateFormatter.localizedString(from: message.timestamp, dateStyle: .none, timeStyle: .short))
                 .font(.caption2)
@@ -516,6 +547,17 @@ struct MessageBubble: View {
         .frame(maxWidth: .infinity, alignment: isFromCurrentUser ? .trailing : .leading)
         .onAppear {
             loadSenderName()
+            
+            // Si el mensaje indica compartir ubicación, comenzar a escuchar actualizaciones
+            if message.content.contains("Comenzó a compartir su ubicación") {
+                locationViewModel.listenToLocationUpdates(in: chat.id, for: message.senderId)
+            }
+        }
+        .onDisappear {
+            // Detener la escucha cuando el mensaje desaparece
+            if message.content.contains("Comenzó a compartir su ubicación") {
+                locationViewModel.stopListening(for: message.senderId)
+            }
         }
     }
     
