@@ -89,6 +89,7 @@ struct ChatHeader: View {
     let presentationMode: Binding<PresentationMode>
     @StateObject private var chatViewModel = ChatViewModel()
     @StateObject private var friendsViewModel = FriendsViewModel()
+    @StateObject private var locationViewModel = LocationSharingViewModel()
     @State private var showNicknameDialog = false
     @State private var showGroupNameDialog = false
     @State private var showAdminActionSheet = false
@@ -101,11 +102,10 @@ struct ChatHeader: View {
     @State private var alertMessage = ""
     @State private var friendNickname: String?
     @State private var originalUsername: String?
-    @State private var participantNames: [String: String] = [:]  // [userId: nombre]
+    @State private var participantNames: [String: String] = [:]
     @State private var availableFriends: [UserProfile] = []
     @State private var showLocationSharingAlert = false
-    @State private var isShareingLocation = false
-    @StateObject private var locationViewModel = LocationSharingViewModel()
+    @AppStorage("isShareingLocation") private var isShareingLocation = false
 
     private var isAdmin: Bool {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return false }
@@ -428,11 +428,9 @@ struct ChatHeader: View {
                 isShareingLocation.toggle()
                 if isShareingLocation {
                     locationViewModel.startSharingLocation(in: chat.id)
-                    // Enviar mensaje de sistema indicando que se está compartiendo ubicación
                     chatViewModel.sendMessage("Comenzó a compartir su ubicación", in: chat.id)
                 } else {
                     locationViewModel.stopSharingLocation(in: chat.id)
-                    // Enviar mensaje de sistema indicando que se dejó de compartir ubicación
                     chatViewModel.sendMessage("Dejó de compartir su ubicación", in: chat.id)
                 }
             }
@@ -485,13 +483,9 @@ struct ChatHeader: View {
                     }
                 }
             }
-        }
-        .onDisappear {
-            // Asegurarnos de detener el compartir ubicación cuando se cierra el chat
-            if isShareingLocation {
-                locationViewModel.stopSharingLocation(in: chat.id)
-                isShareingLocation = false
-            }
+            
+            // Sincronizar el estado al aparecer la vista
+            isShareingLocation = UserDefaults.standard.bool(forKey: "isLocationSharing")
         }
     }
 }

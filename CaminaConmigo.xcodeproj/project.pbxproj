@@ -307,6 +307,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CaminaConmigo/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "La aplicación necesita acceso a la cámara para tomar fotos de reportes";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = Permitir;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = Permitir;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Permitir acceso";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -341,6 +343,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CaminaConmigo/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "La aplicación necesita acceso a la cámara para tomar fotos de reportes";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = Permitir;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = Permitir;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Permitir acceso";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
