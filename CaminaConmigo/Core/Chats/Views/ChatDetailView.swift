@@ -519,7 +519,7 @@ struct MessageBubble: View {
                 Text(message.content)
                     .padding(12)
                     .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
-                    .foregroundColor(isFromCurrentUser ? .white : .black)
+                    .foregroundColor(Color.customText)
                     .cornerRadius(16)
                 
                 if let locationMessage = locationViewModel.activeLocationSharing[message.senderId] {
@@ -530,7 +530,7 @@ struct MessageBubble: View {
                 Text(message.content)
                     .padding(12)
                     .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
-                    .foregroundColor(isFromCurrentUser ? .white : .black)
+                        .foregroundColor(Color.customText)
                     .cornerRadius(16)
             }
             
