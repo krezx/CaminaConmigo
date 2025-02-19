@@ -252,6 +252,13 @@ struct CommentsSection: View {
     }
 }
 
+// Añadir esta extensión al final del archivo
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
 struct ReportDetailPopupView: View {
     let report: ReportAnnotation
     @Environment(\.dismiss) var dismiss
@@ -276,49 +283,91 @@ struct ReportDetailPopupView: View {
         ))
     }
     
+    private var currentUserId: String? {
+        authViewModel.userSession?.uid
+    }
+    
+    private var reportId: String? {
+        report.report.id
+    }
+    
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    ReportHeaderView(report: report)
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ReportHeaderView(report: report)
 
-                    // Mostrar el username del autor si no es anónimo
-                    if !report.report.isAnonymous, let username = authorUsername {
-                        HStack {
-                            Text("Reportado por: \(username)")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
+                        if !report.report.isAnonymous, let username = authorUsername {
+                            HStack {
+                                Text("Reportado por: \(username)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
-                    }
 
-                    CarouselView(
-                        report: report,
-                        region: region,
-                        currentImageIndex: $currentImageIndex
-                    )
-                    
-                    Text(report.report.description)
-                        .font(.body)
-                    
-                    InteractionButtonsView(
-                        liked: $liked,
-                        onShare: shareReport,
-                        onLike: handleLike,
-                        likesCount: likesCount
-                    )
-                    
-                    Divider()
-                    
-                    CommentsSection(
-                        viewModel: viewModel,
-                        currentUserId: authViewModel.userSession?.uid,
-                        reportId: report.report.id,
-                        comment: $comment,
-                        onAddComment: addComment
-                    )
+                        CarouselView(
+                            report: report,
+                            region: region,
+                            currentImageIndex: $currentImageIndex
+                        )
+                        
+                        Text(report.report.description)
+                            .font(.body)
+                        
+                        InteractionButtonsView(
+                            liked: $liked,
+                            onShare: shareReport,
+                            onLike: handleLike,
+                            likesCount: likesCount
+                        )
+                        
+                        Divider()
+                        
+                        // Mostramos los comentarios aquí, pero no el campo de entrada
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Comentarios")
+                                .font(.headline)
+                            
+                            if viewModel.isLoadingComments {
+                                ProgressView()
+                            } else {
+                                ForEach(viewModel.comments) { comment in
+                                    CommentView(
+                                        comment: comment,
+                                        currentUserId: currentUserId,
+                                        onDelete: {
+                                            if let reportId = reportId {
+                                                viewModel.deleteComment(commentId: comment.id ?? "", reportId: reportId)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    .padding()
                 }
-                .padding()
+                .onTapGesture {
+                    hideKeyboard()
+                }
+
+                // Campo de entrada de comentarios
+                if currentUserId != nil {
+                    HStack {
+                        TextField("Añadir un comentario...", text: $comment)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        
+                        Button(action: addComment) {
+                            Text("Enviar")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemBackground))
+                    .shadow(radius: 2)
+                }
             }
             .navigationTitle("Detalles del Reporte")
             .navigationBarTitleDisplayMode(.inline)
@@ -360,6 +409,9 @@ struct ReportDetailPopupView: View {
             .fullScreenCover(isPresented: $navigateToLogin) {
                 LoginView()
             }
+        }
+        .onTapGesture {
+            hideKeyboard()
         }
     }
     
