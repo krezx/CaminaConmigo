@@ -7,6 +7,7 @@
 
 import SwiftUI // Importa el framework SwiftUI para crear la interfaz de usuario
 import MapKit
+import SwiftUI
 
 /// Vista principal para mostrar novedades y reportes.
 struct NovedadView: View {
@@ -31,33 +32,46 @@ struct NovedadView: View {
                 
                 // Filtros horizontales para cambiar la categoría de las novedades
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
+                    HStack(spacing: 10) {
                         ForEach(filters, id: \.self) { filter in
                             FilterButton(
                                 title: filter,
                                 isSelected: filter == selectedFilter,
                                 action: {
-                                    selectedFilter = filter
-                                    viewModel.filterReports(by: filter)
+                                    withAnimation {
+                                        selectedFilter = filter
+                                        viewModel.filterReports(by: filter)
+                                    }
                                 }
                             )
                         }
                     }
+                    .padding(.vertical, 5)
                 }
             }
             .padding(.horizontal) // Añade espacio horizontal para la barra de búsqueda y filtros
             
             // Lista de reportes
             ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(viewModel.filteredReports) { report in
-                        ReporteCard(report: report, viewModel: viewModel)
-                            .onTapGesture {
-                                handleReportSelection(report)
-                            }
+                if selectedFilter == "Ciudad" && viewModel.isLoadingCity {
+                    VStack {
+                        Spacer()
+                        ProgressView("Cargando reportes por ciudad...")
+                            .padding()
+                        Spacer()
                     }
+                    .frame(height: 100)
+                } else {
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.filteredReports) { report in
+                            ReporteCard(report: report, viewModel: viewModel)
+                                .onTapGesture {
+                                    handleReportSelection(report)
+                                }
+                        }
+                    }
+                    .padding()
                 }
-                .padding()
             }
         }
         .sheet(isPresented: $showReportDetail) {
@@ -125,12 +139,27 @@ struct FilterButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
+                .font(.system(size: 14, weight: isSelected ? .bold : .regular))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color(red: 239/255, green: 96/255, blue: 152/255) : Color(.systemGray6)) // Color de fondo dependiendo de si el filtro está seleccionado
-                .foregroundColor(isSelected ? .white : .black) // Color del texto dependiendo de si el filtro está seleccionado
-                .cornerRadius(20) // Bordes redondeados
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(isSelected ? 
+                            Color(red: 239/255, green: 96/255, blue: 152/255) : 
+                            Color(.systemGray6)
+                        )
+                )
+                .foregroundColor(isSelected ? .white : .black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(isSelected ? 
+                            Color(red: 239/255, green: 96/255, blue: 152/255) : 
+                            Color.clear, 
+                            lineWidth: 1
+                        )
+                )
         }
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }
 

@@ -23,6 +23,7 @@ class ReportViewModel: ObservableObject {
     @Published var filteredReports: [ReportAnnotation] = []
     @Published var selectedFilter: String = "Tendencias"
     @Published var selectedAddress: String = "Seleccionar ubicación"
+    @Published var isLoadingCity = false
 
     private let db = Firestore.firestore()
     private let storage = Storage.storage()
@@ -432,14 +433,64 @@ class ReportViewModel: ObservableObject {
     func filterReports(by filter: String) {
         switch filter {
         case "Tendencias":
+            // Ordenar por número de likes
             filteredReports = reports.sorted { $0.report.likes > $1.report.likes }
         case "Recientes":
+            // Ordenar por fecha más reciente
             filteredReports = reports.sorted { $0.report.timestamp > $1.report.timestamp }
         case "Ciudad":
-            filteredReports = reports // Por ahora mostramos todos, podríamos filtrar por ciudad si agregamos esa información
+            isLoadingCity = true
+            Task {
+                await groupReportsByCity()
+                await MainActor.run {
+                    isLoadingCity = false
+                }
+            }
         default:
             filteredReports = reports
         }
+    }
+
+    @MainActor
+    private func groupReportsByCity() async {
+        let geocoder = CLGeocoder()
+        var reportsWithCity: [(report: ReportAnnotation, city: String)] = []
+        
+        // Obtener la ciudad actual del usuario para ordenar primero los reportes de su ciudad
+        let currentLocation = FilterLocationManager.shared.getCurrentLocation()
+        var userCity = "ZZZ" // Valor por defecto para ordenar al final si no se encuentra la ciudad
+        
+        if let currentLocation = currentLocation {
+            if let placemark = try? await geocoder.reverseGeocodeLocation(CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)).first,
+               let city = placemark.locality {
+                userCity = city
+            }
+        }
+        
+        // Procesar cada reporte para obtener su ciudad
+        for report in reports {
+            let location = CLLocation(latitude: report.coordinate.latitude, longitude: report.coordinate.longitude)
+            if let placemark = try? await geocoder.reverseGeocodeLocation(location).first,
+               let city = placemark.locality {
+                reportsWithCity.append((report: report, city: city))
+            }
+        }
+        
+        // Ordenar primero por ciudad (la ciudad del usuario primero) y luego por fecha
+        filteredReports = reportsWithCity
+            .sorted { (report1, report2) -> Bool in
+                if report1.city == userCity && report2.city != userCity {
+                    return true
+                }
+                if report2.city == userCity && report1.city != userCity {
+                    return false
+                }
+                if report1.city == report2.city {
+                    return report1.report.report.timestamp > report2.report.report.timestamp
+                }
+                return report1.city < report2.city
+            }
+            .map { $0.report }
     }
 
     /// Obtiene el número de comentarios de un reporte
