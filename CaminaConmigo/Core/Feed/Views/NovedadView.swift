@@ -12,8 +12,9 @@ import SwiftUI
 /// Vista principal para mostrar novedades y reportes.
 struct NovedadView: View {
     @StateObject private var viewModel = ReportViewModel()
-    @State private var searchText = "" // Texto de búsqueda
-    @State private var selectedFilter = "Tendencias" // Filtro seleccionado
+    @State private var searchText = ""
+    @State private var showSearchBar = false
+    @State private var selectedFilter = "Tendencias"
     @State private var selectedReport: ReportAnnotation?
     @State private var showReportDetail = false
     @State private var isLoading = false
@@ -22,38 +23,88 @@ struct NovedadView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Barra superior con búsqueda y filtros
-            HStack(spacing: 12) {
-                // Botón de búsqueda
-                Button(action: {}) {
-                    Image(systemName: "magnifyingglass") // Icono de búsqueda
-                        .foregroundColor(.gray)
-                        .frame(width: 40, height: 40)
-                }
-                
-                // Filtros horizontales para cambiar la categoría de las novedades
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(filters, id: \.self) { filter in
-                            FilterButton(
-                                title: filter,
-                                isSelected: filter == selectedFilter,
-                                action: {
-                                    withAnimation {
-                                        selectedFilter = filter
-                                        viewModel.filterReports(by: filter)
-                                    }
+            VStack {
+                HStack(spacing: 12) {
+                    if showSearchBar {
+                        // Barra de búsqueda expandida
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+                            TextField("Buscar reportes...", text: $searchText)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .onChange(of: searchText) { newValue in
+                                    viewModel.searchReports(query: newValue)
                                 }
-                            )
+                            if !searchText.isEmpty {
+                                Button(action: {
+                                    searchText = ""
+                                    viewModel.searchReports(query: "")
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            Button("Cancelar") {
+                                withAnimation {
+                                    showSearchBar = false
+                                    searchText = ""
+                                    viewModel.searchReports(query: "")
+                                }
+                            }
+                            .foregroundColor(.gray)
+                        }
+                        .padding(8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                    } else {
+                        // Botón de búsqueda y filtros
+                        Button(action: {
+                            withAnimation {
+                                showSearchBar = true
+                            }
+                        }) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+                                .frame(width: 40, height: 40)
+                        }
+                        
+                        // Filtros horizontales
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(filters, id: \.self) { filter in
+                                    FilterButton(
+                                        title: filter,
+                                        isSelected: filter == selectedFilter,
+                                        action: {
+                                            withAnimation {
+                                                selectedFilter = filter
+                                                viewModel.filterReports(by: filter)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                            .padding(.vertical, 5)
                         }
                     }
-                    .padding(.vertical, 5)
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal) // Añade espacio horizontal para la barra de búsqueda y filtros
             
             // Lista de reportes
             ScrollView {
-                if selectedFilter == "Ciudad" && viewModel.isLoadingCity {
+                if !searchText.isEmpty {
+                    // Mostrar resultados de búsqueda
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.searchResults) { report in
+                            ReporteCard(report: report, viewModel: viewModel)
+                                .onTapGesture {
+                                    handleReportSelection(report)
+                                }
+                        }
+                    }
+                    .padding()
+                } else if selectedFilter == "Ciudad" && viewModel.isLoadingCity {
                     VStack {
                         Spacer()
                         ProgressView("Cargando reportes por ciudad...")

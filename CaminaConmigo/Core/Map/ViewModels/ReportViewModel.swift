@@ -24,6 +24,9 @@ class ReportViewModel: ObservableObject {
     @Published var selectedFilter: String = "Tendencias"
     @Published var selectedAddress: String = "Seleccionar ubicación"
     @Published var isLoadingCity = false
+    @Published var searchText = ""
+    @Published var isSearching = false
+    @Published var searchResults: [ReportAnnotation] = []
 
     private let db = Firestore.firestore()
     private let storage = Storage.storage()
@@ -562,6 +565,24 @@ class ReportViewModel: ObservableObject {
             } else {
                 completion(nil)
             }
+        }
+    }
+
+    func searchReports(query: String) {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+        
+        let queryLowercased = query.lowercased()
+        searchResults = reports.filter { report in
+            // Primero busca en el tipo de reporte
+            let typeMatch = report.report.type.title.lowercased().contains(queryLowercased)
+            
+            // Luego busca en la descripción
+            let descriptionMatch = report.report.description.lowercased().contains(queryLowercased)
+            
+            return typeMatch || descriptionMatch
         }
     }
 }
