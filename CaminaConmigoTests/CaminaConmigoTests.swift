@@ -5,12 +5,23 @@
 //  Created by a on 19-02-25.
 //
 
-import Testing
+import XCTest
+@testable import CaminaConmigo
 
-struct CaminaConmigoTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+final class CaminaConmigoTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        // Configuración común para todas las pruebas
+    }
+    
+    override func tearDown() {
+        // Limpieza después de cada prueba
+        super.tearDown()
     }
 
+    func testExample() async throws {
+        // Esta es una prueba de ejemplo
+        // Aquí puedes escribir tus verificaciones usando XCTAssert
+        XCTAssertTrue(true, "Esta prueba siempre pasa")
+    }
 }

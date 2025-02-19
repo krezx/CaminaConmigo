@@ -19,7 +19,18 @@
 		00E7436B2D519741007A5350 /* FirebaseDynamicLinks in Frameworks */ = {isa = PBXBuildFile; productRef = 00E7436A2D519741007A5350 /* FirebaseDynamicLinks */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0053D1D82D66517F00653BE4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 00CFEB142D47F03B00A50B2E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 00CFEB1B2D47F03B00A50B2E;
+			remoteInfo = CaminaConmigo;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		0053D1D42D66517F00653BE4 /* CaminaConmigoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CaminaConmigoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00CFEB1C2D47F03B00A50B2E /* CaminaConmigo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaminaConmigo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -34,6 +45,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		0053D1D52D66517F00653BE4 /* CaminaConmigoTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CaminaConmigoTests;
+			sourceTree = "<group>";
+		};
 		00CFEB1E2D47F03B00A50B2E /* CaminaConmigo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -45,6 +61,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0053D1D12D66517F00653BE4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		00CFEB192D47F03B00A50B2E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -69,6 +92,7 @@
 			isa = PBXGroup;
 			children = (
 				00CFEB1E2D47F03B00A50B2E /* CaminaConmigo */,
+				0053D1D52D66517F00653BE4 /* CaminaConmigoTests */,
 				00CFEB1D2D47F03B00A50B2E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -77,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				00CFEB1C2D47F03B00A50B2E /* CaminaConmigo.app */,
+				0053D1D42D66517F00653BE4 /* CaminaConmigoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,6 +109,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0053D1D32D66517F00653BE4 /* CaminaConmigoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0053D1DA2D66517F00653BE4 /* Build configuration list for PBXNativeTarget "CaminaConmigoTests" */;
+			buildPhases = (
+				0053D1D02D66517F00653BE4 /* Sources */,
+				0053D1D12D66517F00653BE4 /* Frameworks */,
+				0053D1D22D66517F00653BE4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0053D1D92D66517F00653BE4 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0053D1D52D66517F00653BE4 /* CaminaConmigoTests */,
+			);
+			name = CaminaConmigoTests;
+			packageProductDependencies = (
+			);
+			productName = CaminaConmigoTests;
+			productReference = 0053D1D42D66517F00653BE4 /* CaminaConmigoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		00CFEB1B2D47F03B00A50B2E /* CaminaConmigo */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 00CFEB2A2D47F03D00A50B2E /* Build configuration list for PBXNativeTarget "CaminaConmigo" */;
@@ -126,6 +174,10 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					0053D1D32D66517F00653BE4 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 00CFEB1B2D47F03B00A50B2E;
+					};
 					00CFEB1B2D47F03B00A50B2E = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -150,11 +202,19 @@
 			projectRoot = "";
 			targets = (
 				00CFEB1B2D47F03B00A50B2E /* CaminaConmigo */,
+				0053D1D32D66517F00653BE4 /* CaminaConmigoTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0053D1D22D66517F00653BE4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		00CFEB1A2D47F03B00A50B2E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -165,6 +225,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0053D1D02D66517F00653BE4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		00CFEB182D47F03B00A50B2E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -174,7 +241,53 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		0053D1D92D66517F00653BE4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 00CFEB1B2D47F03B00A50B2E /* CaminaConmigo */;
+			targetProxy = 0053D1D82D66517F00653BE4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		0053D1DB2D66517F00653BE4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 42R3J6P8VZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.CaminaConmigo.CaminaConmigoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CaminaConmigo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CaminaConmigo";
+			};
+			name = Debug;
+		};
+		0053D1DC2D66517F00653BE4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 42R3J6P8VZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.CaminaConmigo.CaminaConmigoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CaminaConmigo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CaminaConmigo";
+			};
+			name = Release;
+		};
 		00CFEB282D47F03D00A50B2E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -369,6 +482,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0053D1DA2D66517F00653BE4 /* Build configuration list for PBXNativeTarget "CaminaConmigoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0053D1DB2D66517F00653BE4 /* Debug */,
+				0053D1DC2D66517F00653BE4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		00CFEB172D47F03B00A50B2E /* Build configuration list for PBXProject "CaminaConmigo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
