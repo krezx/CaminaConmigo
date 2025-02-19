@@ -21,10 +21,37 @@ struct ReportHeaderView: View {
     }
     
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        let seconds = -date.timeIntervalSinceNow
+        
+        let minute = 60.0
+        let hour = minute * 60
+        let day = hour * 24
+        let week = day * 7
+        let month = day * 30
+        let year = day * 365
+        
+        switch seconds {
+        case 0..<minute:
+            return "hace un momento"
+        case minute..<hour:
+            let minutes = Int(seconds/minute)
+            return "hace \(minutes) \(minutes == 1 ? "minuto" : "minutos")"
+        case hour..<day:
+            let hours = Int(seconds/hour)
+            return "hace \(hours) \(hours == 1 ? "hora" : "horas")"
+        case day..<week:
+            let days = Int(seconds/day)
+            return "hace \(days) \(days == 1 ? "día" : "días")"
+        case week..<month:
+            let weeks = Int(seconds/week)
+            return "hace \(weeks) \(weeks == 1 ? "semana" : "semanas")"
+        case month..<year:
+            let months = Int(seconds/month)
+            return "hace \(months) \(months == 1 ? "mes" : "meses")"
+        default:
+            let years = Int(seconds/year)
+            return "hace \(years) \(years == 1 ? "año" : "años")"
+        }
     }
 }
 
@@ -446,8 +473,36 @@ struct CommentView: View {
     }
     
     private func formatCommentDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+        let seconds = -date.timeIntervalSinceNow
+        
+        let minute = 60.0
+        let hour = minute * 60
+        let day = hour * 24
+        let week = day * 7
+        let month = day * 30
+        let year = day * 365
+        
+        switch seconds {
+        case 0..<minute:
+            return "hace un momento"
+        case minute..<hour:
+            let minutes = Int(seconds/minute)
+            return "hace \(minutes) \(minutes == 1 ? "minuto" : "minutos")"
+        case hour..<day:
+            let hours = Int(seconds/hour)
+            return "hace \(hours) \(hours == 1 ? "hora" : "horas")"
+        case day..<week:
+            let days = Int(seconds/day)
+            return "hace \(days) \(days == 1 ? "día" : "días")"
+        case week..<month:
+            let weeks = Int(seconds/week)
+            return "hace \(weeks) \(weeks == 1 ? "semana" : "semanas")"
+        case month..<year:
+            let months = Int(seconds/month)
+            return "hace \(months) \(months == 1 ? "mes" : "meses")"
+        default:
+            let years = Int(seconds/year)
+            return "hace \(years) \(years == 1 ? "año" : "años")"
+        }
     }
 } 
