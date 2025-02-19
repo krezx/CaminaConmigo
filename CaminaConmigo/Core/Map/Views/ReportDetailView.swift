@@ -17,8 +17,10 @@ struct ReportDetailView: View {
     @State private var description: String = ""  // Descripción del reporte proporcionada por el usuario.
     @State private var isAnonymous: Bool = true  // Controla si el reporte se enviará de forma anónima.
     @State private var showImagePicker = false  // Controla si se debe mostrar el selector de imagen.
-    @State private var selectedImage: UIImage?  // Imagen seleccionada para el reporte.
+    @State private var selectedImages: [UIImage] = []  // Imágenes seleccionadas para el reporte.
     @State private var showMapPicker = false  // Controla si se debe mostrar el selector de mapa.
+    @State private var showCamera = false  // Controla si se debe mostrar la cámara
+    @State private var selectedAddress: String = "Seleccionar ubicación"
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -39,7 +41,7 @@ struct ReportDetailView: View {
                     dismiss()  // Cierra la vista cuando se presiona.
                 } label: {
                     Image(systemName: "xmark")  // Icono de "X" para cerrar.
-                        .foregroundColor(.black)
+                        .foregroundColor(Color.customText)
                 }
             }
             .padding(.bottom)
@@ -48,7 +50,7 @@ struct ReportDetailView: View {
             ZStack(alignment: .topLeading) {
                 if description.isEmpty {
                     Text("¿Qué sucede?...")  // Placeholder que aparece cuando el campo está vacío.
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color.customText)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 8)
                         .zIndex(1)
@@ -57,7 +59,7 @@ struct ReportDetailView: View {
                 TextEditor(text: $description)  // Editor de texto para la descripción.
                     .frame(height: 100)
                     .padding(4)
-                    .background(Color.white)
+                    .background(Color.customBackground)
             }
             .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))  // Fondo con borde redondeado.
             
@@ -66,33 +68,62 @@ struct ReportDetailView: View {
                 showMapPicker = true  // Muestra el selector de mapa al presionar.
             } label: {
                 HStack {
-                    Image(systemName: "location.fill")  // Icono de ubicación.
-                    Text(viewModel.selectedLocation != nil ? "Ubicación seleccionada" : "Seleccionar ubicación")  // Texto del botón.
-                        .foregroundColor(.gray)
+                    Image(systemName: "location.fill")
+                    Text(selectedAddress)
+                        .foregroundColor(Color.gray)
                 }
             }
             
             // Toggle para elegir si el reporte es anónimo o no.
             Toggle("Reportar anónimamente", isOn: $isAnonymous)
-                .tint(.purple)
+                .tint(Color(red: 239/255, green: 96/255, blue: 152/255))
             
-            // Botones para tomar o seleccionar una foto.
+            // Vista previa de imágenes seleccionadas
+            if !selectedImages.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(selectedImages.indices, id: \.self) { index in
+                            Image(uiImage: selectedImages[index])
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(
+                                    Button(action: {
+                                        selectedImages.remove(at: index)
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.red)
+                                            .padding(4)
+                                    }
+                                    .offset(x: 5, y: -5),
+                                    alignment: .topTrailing
+                                )
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .frame(height: 120)
+            }
+            
+            // Botones para imágenes
             HStack(spacing: 20) {
                 Spacer()
                 Button {
-                    // Implementar funcionalidad para tomar una foto
+                    showCamera = true
                 } label: {
                     HStack {
-                        Image(systemName: "camera")  // Icono de cámara.
-                        Text("Tomar foto")  // Texto del botón.
+                        Image(systemName: "camera")
+                        Text("Tomar foto")
                     }
                 }
+                
                 Button {
-                    showImagePicker = true  // Muestra el selector de imagen al presionar.
+                    showImagePicker = true
                 } label: {
                     HStack {
-                        Image(systemName: "photo")  // Icono de foto.
-                        Text("Seleccionar foto")  // Texto del botón.
+                        Image(systemName: "photo")
+                        Text("Seleccionar fotos")
                     }
                 }
                 Spacer()
@@ -104,8 +135,8 @@ struct ReportDetailView: View {
             Button {
                 viewModel.currentReport?.description = description
                 viewModel.currentReport?.isAnonymous = isAnonymous
-                viewModel.submitReport(image: selectedImage)  // Llama al método del ViewModel para enviar el reporte con la imagen seleccionada.
-                dismiss()  // Cierra la vista después de enviar el reporte.
+                viewModel.submitReport(images: selectedImages)
+                dismiss()
             } label: {
                 Text("REPORTAR")
                     .fontWeight(.bold)
@@ -117,28 +148,36 @@ struct ReportDetailView: View {
             }
         }
         .padding()
-        .background(Color.white)  // Fondo blanco para toda la vista.
+        .background(Color.customBackground)  // Fondo blanco para toda la vista.
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $selectedImage)  // Muestra el selector de imágenes cuando está activo.
+            MultiImagePicker(images: $selectedImages)
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraView(images: $selectedImages)
         }
         .sheet(isPresented: $showMapPicker) {
-            MapPickerView(selectedLocation: $viewModel.selectedLocation, viewModel: viewModel)
+            MapPickerView(
+                selectedLocation: $viewModel.selectedLocation,
+                selectedAddress: $selectedAddress,
+                viewModel: viewModel
+            )
         }
     }
 }
 
 /// Vista auxiliar para seleccionar una imagen usando PHPickerViewController.
 struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?  // Imagen seleccionada, vinculada al estado de la vista principal.
+    @Binding var images: [UIImage]
+    @Environment(\.presentationMode) var presentationMode
     
     /// Crea el controlador de vista PHPickerViewController para seleccionar imágenes.
     ///
     /// - Parameter context: Contexto utilizado para el ciclo de vida de la vista.
     /// - Returns: Un controlador PHPickerViewController configurado.
     func makeUIViewController(context: Context) -> PHPickerViewController {
-        var config = PHPickerConfiguration()  // Configura el selector de imágenes.
-        config.selectionLimit = 1  // Permite seleccionar solo una imagen.
-        config.filter = .images  // Filtra para que solo se puedan seleccionar imágenes.
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 5  // Límite de 5 imágenes
+        config.filter = .images
         let picker = PHPickerViewController(configuration: config)
         picker.delegate = context.coordinator  // Asigna el delegado del picker.
         return picker
@@ -163,14 +202,16 @@ struct ImagePicker: UIViewControllerRepresentable {
         /// - Parameter picker: El picker que gestionó la selección.
         /// - Parameter results: Los resultados de la selección.
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            picker.dismiss(animated: true)  // Cierra el picker después de la selección.
+            parent.presentationMode.wrappedValue.dismiss()
             
-            guard let provider = results.first?.itemProvider else { return }
-            
-            if provider.canLoadObject(ofClass: UIImage.self) {
-                provider.loadObject(ofClass: UIImage.self) { image, _ in
-                    DispatchQueue.main.async {
-                        self.parent.image = image as? UIImage  // Asigna la imagen seleccionada.
+            for result in results {
+                if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
+                    result.itemProvider.loadObject(ofClass: UIImage.self) { image, error in
+                        if let image = image as? UIImage {
+                            DispatchQueue.main.async {
+                                self.parent.images.append(image)
+                            }
+                        }
                     }
                 }
             }

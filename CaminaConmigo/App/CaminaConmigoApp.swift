@@ -70,6 +70,7 @@ struct CaminaConmigoApp: App {
     @StateObject var authViewModel = AuthenticationViewModel() // Inicializa el ViewModel de autenticación.
     @StateObject var navigationState = NavigationState() // Estado de navegación global
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate // Asocia el AppDelegate con la aplicación.
+    @AppStorage("isDarkMode") private var isDarkMode = false
     
     /// Cuerpo principal de la aplicación que define su escena.
     var body: some Scene {
@@ -84,7 +85,8 @@ struct CaminaConmigoApp: App {
             }
             .environmentObject(authViewModel) // Proporciona el ViewModel de autenticación al entorno.
             .environmentObject(navigationState) // Proporciona el estado de navegación al entorno.
-            .preferredColorScheme(.light) // Establece el esquema de color preferido a claro.
+            .preferredColorScheme(isDarkMode ? .dark : .light) // Establece el esquema de color preferido a claro.
+            .environment(\.colorScheme, isDarkMode ? .dark : .light)
         }
     }
 }

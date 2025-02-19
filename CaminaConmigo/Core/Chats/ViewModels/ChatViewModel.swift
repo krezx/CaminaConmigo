@@ -129,7 +129,8 @@ class ChatViewModel: ObservableObject {
             lastMessage: "Nuevo chat creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
             lastMessageTimestamp: Date(),
-            adminIds: [currentUserId]
+            adminIds: [currentUserId],
+            participantPhotos: [:]
         )
         
         db.collection("chats")
@@ -140,6 +141,21 @@ class ChatViewModel: ObservableObject {
                 }
             }
     }
+
+    func updateParticipantPhoto(chatId: String, userId: String, photoURL: String?) async {
+    do {
+        var updateData: [String: Any] = [:]
+        if let photoURL = photoURL {
+            updateData["participantPhotos.\(userId)"] = photoURL
+        } else {
+            updateData["participantPhotos.\(userId)"] = FieldValue.delete()
+        }
+        
+        try await db.collection("chats").document(chatId).updateData(updateData)
+    } catch {
+        self.error = error.localizedDescription
+    }
+}
     
     func createGroupChat(name: String, participants: [String], completion: @escaping (Bool) -> Void) {
         guard let currentUserId = Auth.auth().currentUser?.uid else {
@@ -154,7 +170,8 @@ class ChatViewModel: ObservableObject {
             lastMessage: "Grupo creado",
             timeString: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
             lastMessageTimestamp: Date(),
-            adminIds: [currentUserId]  // El creador será el primer administrador
+            adminIds: [currentUserId],  // El creador será el primer administrador
+            participantPhotos: [:]
         )
         
         // Crear el chat
@@ -387,7 +404,8 @@ class ChatViewModel: ObservableObject {
                     lastMessage: data["lastMessage"] as? String ?? "",
                     timeString: DateFormatter.localizedString(from: (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() ?? Date(), dateStyle: .none, timeStyle: .short),
                     lastMessageTimestamp: (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() ?? Date(),
-                    adminIds: data["adminIds"] as? [String] ?? []
+                    adminIds: data["adminIds"] as? [String] ?? [],
+                    participantPhotos: data["participantPhotos"] as? [String: String] ?? [:]
                 )
             }
         } catch {

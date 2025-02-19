@@ -69,10 +69,11 @@ struct EmergencyCallView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 60)
+                                .foregroundColor(Color.customText)
                             Text("Carabineros")
                                 .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(Color.customText)
                         }
-                        .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                     }
@@ -91,11 +92,12 @@ struct EmergencyCallView: View {
                                         .scaledToFit()
                                         .frame(width: 50)
                                         .padding(5)
+                                        .foregroundColor(Color.customText)
                                     Text(contact.name)
                                         .font(.system(size: 13, weight: .bold))
                                         .lineLimit(1)
                                 }
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.customText)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 8)
                             }
@@ -112,7 +114,7 @@ struct EmergencyCallView: View {
                 }) {
                     Text("Cerrar")
                         .font(.system(size: 13))
-                        .foregroundColor(.black)
+                        .foregroundColor(Color.customText)
                 }
             }
             .padding(.vertical, 21)
@@ -120,7 +122,7 @@ struct EmergencyCallView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
-        .background(Color.white)
+        .background(Color.customBackground)
         .cornerRadius(30)
         .shadow(color: Color.black.opacity(0.2), radius: 5)
         .frame(width: 320)

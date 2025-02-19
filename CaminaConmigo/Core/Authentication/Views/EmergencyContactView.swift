@@ -28,7 +28,7 @@ struct EmergencyContactsView: View {
                         dismiss()
                     }) {
                         Image(systemName: "arrow.left")
-                            .foregroundColor(.black)
+                            .foregroundColor(Color.customText)
                             .font(.title2)
                     }
                     
@@ -42,15 +42,15 @@ struct EmergencyContactsView: View {
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 10)
-                .background(Color.white)
-                .shadow(color: Color.gray.opacity(0.2), radius: 2)
+                .background(Color.customBackground)
+                .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)  // Sombra sutil para la barra.
                 
                 // Lista de contactos
                 List {
                     ForEach(Array(viewModel.contacts.enumerated()), id: \.element.id) { index, contact in
                         HStack {
                             Text("\(index + 1)")
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.customText)
                                 .frame(width: 25)
                             
                             VStack(alignment: .leading, spacing: 2) {
@@ -58,7 +58,7 @@ struct EmergencyContactsView: View {
                                     .font(.system(size: 16, weight: .medium))
                                 Text(contact.phone)
                                     .font(.system(size: 14))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(Color.customText)
                             }
                             
                             Spacer()
@@ -70,11 +70,11 @@ struct EmergencyContactsView: View {
                                 showingEditContact = true
                             }) {
                                 Image(systemName: "pencil")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(Color.customText)
                             }
                             
                             Image(systemName: "line.3.horizontal")
-                                .foregroundColor(.gray)
+                                .foregroundColor(Color.customText)
                                 .padding(.leading, 8)
                         }
                         .padding(.vertical, 4)
@@ -101,11 +101,11 @@ struct EmergencyContactsView: View {
                         Image(systemName: "plus.circle.fill")
                         Text("Añadir contacto")
                     }
-                    .foregroundColor(.black)
+                    .foregroundColor(Color.customText)
                     .padding(.vertical, 30)
                 }
             }
-            .background(Color(UIColor.systemBackground))
+            .background(Color.customBackground)
         }
         .navigationBarHidden(true)
         .alert("Añadir Contacto", isPresented: $showingAddContact) {

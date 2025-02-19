@@ -126,7 +126,7 @@ struct MenuView: View {
                         authViewModel.signOut()  // Cerrar sesión si el usuario está autenticado.
                     }) {
                         Text(authViewModel.isGuestMode ? "Iniciar sesión" : "Cerrar sesión")
-                            .foregroundColor(.black)
+                            .foregroundColor(Color.customText)
                             .padding()
                             .frame(maxWidth: .infinity)
                             .background(RoundedRectangle(cornerRadius: 30)
@@ -147,7 +147,7 @@ struct MenuView: View {
                     .padding(.bottom, 10)
                 }
             }
-            .background(Color(UIColor.systemBackground))  // Fondo de la vista.
+            .background(Color.customBackground)  // Fondo de la vista.
             .navigationBarBackButtonHidden(true)  // Oculta el botón de retroceso.
             .tint(.black)
             .alert("Iniciar sesión", isPresented: $showGuestAlert) {  // Alerta de inicio de sesión.
@@ -185,11 +185,11 @@ struct MenuItem: View {
             Image(systemName: icon)  // Icono de la opción.
                 .font(.title3)
                 .frame(width: 30, height: 30)
-                .foregroundColor(.black)
+                .foregroundColor(Color.customText)
             
             Text(title)  // Título de la opción.
                 .font(.body)
-                .foregroundColor(.black)
+                .foregroundColor(Color.customText)
             
             Spacer()
             

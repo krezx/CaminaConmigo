@@ -89,6 +89,7 @@ struct ChatHeader: View {
     let presentationMode: Binding<PresentationMode>
     @StateObject private var chatViewModel = ChatViewModel()
     @StateObject private var friendsViewModel = FriendsViewModel()
+    @StateObject private var locationViewModel = LocationSharingViewModel()
     @State private var showNicknameDialog = false
     @State private var showGroupNameDialog = false
     @State private var showAdminActionSheet = false
@@ -101,10 +102,10 @@ struct ChatHeader: View {
     @State private var alertMessage = ""
     @State private var friendNickname: String?
     @State private var originalUsername: String?
-    @State private var participantNames: [String: String] = [:]  // [userId: nombre]
+    @State private var participantNames: [String: String] = [:]
     @State private var availableFriends: [UserProfile] = []
     @State private var showLocationSharingAlert = false
-    @State private var isShareingLocation = false
+    @AppStorage("isShareingLocation") private var isShareingLocation = false
 
     private var isAdmin: Bool {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return false }
@@ -179,18 +180,26 @@ struct ChatHeader: View {
                 presentationMode.wrappedValue.dismiss()
             }) {
                 Image(systemName: "arrow.left")
-                    .foregroundColor(Color.black)
+                    .foregroundColor(Color.customText)
+                    .font(.title2)
             }
             
-            Circle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 40, height: 40)
+            if chat.participants.count == 2,
+               let currentUserId = Auth.auth().currentUser?.uid,
+               let otherUserId = chat.participants.first(where: { $0 != currentUserId }) {
+                ProfileImageView(userId: otherUserId, size: 40)
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 40, height: 40)
+            }
             
             Text(displayName)
                 .lineLimit(1)
                 .font(.title)
                 .bold()
                 .padding(.vertical, 5)
+                .foregroundColor(Color.customText)
             
             Spacer()
             
@@ -270,20 +279,14 @@ struct ChatHeader: View {
                     }
                 }
                 
-                Button(action: {
-                    // Acción para eliminar chat (por implementar)
-                }) {
-                    Label("Eliminar chat", systemImage: "trash")
-                        .foregroundColor(.red)
-                }
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: 22))
-                    .foregroundColor(.black)
+                    .foregroundColor(Color.customText)
             }
         }
         .padding(.horizontal)
-        .background(Color.white)
+        .background(Color.customBackground)
         .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
         .alert("Cambiar apodo", isPresented: $showNicknameDialog) {
             TextField("Nuevo apodo", text: $newNickname)
@@ -423,7 +426,13 @@ struct ChatHeader: View {
         .alert("Compartir ubicación", isPresented: $showLocationSharingAlert) {
             Button(isShareingLocation ? "Dejar de compartir" : "Compartir", role: isShareingLocation ? .destructive : .none) {
                 isShareingLocation.toggle()
-                // Aquí implementarías la lógica para comenzar/detener el compartir ubicación
+                if isShareingLocation {
+                    locationViewModel.startSharingLocation(in: chat.id)
+                    chatViewModel.sendMessage("Comenzó a compartir su ubicación", in: chat.id)
+                } else {
+                    locationViewModel.stopSharingLocation(in: chat.id)
+                    chatViewModel.sendMessage("Dejó de compartir su ubicación", in: chat.id)
+                }
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
@@ -474,6 +483,9 @@ struct ChatHeader: View {
                     }
                 }
             }
+            
+            // Sincronizar el estado al aparecer la vista
+            isShareingLocation = UserDefaults.standard.bool(forKey: "isLocationSharing")
         }
     }
 }
@@ -484,6 +496,7 @@ struct MessageBubble: View {
     let chat: Chat // Añadimos referencia al chat
     @StateObject private var friendsViewModel = FriendsViewModel()
     @State private var senderName: String = ""
+    @StateObject private var locationViewModel = LocationSharingViewModel()
     
     private var isFromCurrentUser: Bool {
         message.senderId == Auth.auth().currentUser?.uid
@@ -501,11 +514,25 @@ struct MessageBubble: View {
                     .padding(.horizontal, 4)
             }
             
-            Text(message.content)
-                .padding(12)
-                .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
-                .foregroundColor(isFromCurrentUser ? .white : .black)
-                .cornerRadius(16)
+            if message.content.contains("Comenzó a compartir su ubicación") {
+                // Iniciar escucha de actualizaciones de ubicación
+                Text(message.content)
+                    .padding(12)
+                    .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
+                    .foregroundColor(Color.customText)
+                    .cornerRadius(16)
+                
+                if let locationMessage = locationViewModel.activeLocationSharing[message.senderId] {
+                    SharedLocationMapView(locationMessage: locationMessage)
+                        .frame(height: 200)
+                }
+            } else {
+                Text(message.content)
+                    .padding(12)
+                    .background(isFromCurrentUser ? Color.blue : Color(UIColor.systemGray5))
+                        .foregroundColor(Color.customText)
+                    .cornerRadius(16)
+            }
             
             Text(DateFormatter.localizedString(from: message.timestamp, dateStyle: .none, timeStyle: .short))
                 .font(.caption2)
@@ -514,6 +541,17 @@ struct MessageBubble: View {
         .frame(maxWidth: .infinity, alignment: isFromCurrentUser ? .trailing : .leading)
         .onAppear {
             loadSenderName()
+            
+            // Si el mensaje indica compartir ubicación, comenzar a escuchar actualizaciones
+            if message.content.contains("Comenzó a compartir su ubicación") {
+                locationViewModel.listenToLocationUpdates(in: chat.id, for: message.senderId)
+            }
+        }
+        .onDisappear {
+            // Detener la escucha cuando el mensaje desaparece
+            if message.content.contains("Comenzó a compartir su ubicación") {
+                locationViewModel.stopListening(for: message.senderId)
+            }
         }
     }
     
@@ -568,6 +606,6 @@ struct MessageInputField: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(Color.customBackground)
     }
 }

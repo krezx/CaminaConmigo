@@ -25,6 +25,7 @@ struct ReportSheetView: View {
             Text("REPORTE")
                 .font(.headline)
                 .padding(.top)  // Espaciado superior para separar del borde.
+                .foregroundColor(Color.customText)
             
             // Vista de rejilla (LazyVGrid) para mostrar los tipos de reporte.
             LazyVGrid(columns: columns, spacing: 20) {
@@ -39,12 +40,12 @@ struct ReportSheetView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 40, height: 40)
-                                .foregroundColor(.purple)  // Color del ícono.
+                                .foregroundColor(Color.customText)  // Color del ícono.
                             
                             Text(type.title)  // Título del tipo de reporte.
                                 .font(.caption)
                                 .multilineTextAlignment(.center)  // Centra el texto.
-                                .foregroundColor(.black)  // Color del texto.
+                                .foregroundColor(Color.customText)  // Color del texto.
                         }
                         .frame(height: 80)  // Define la altura del botón.
                     }
@@ -56,10 +57,10 @@ struct ReportSheetView: View {
             Button("Cerrar") {
                 dismiss()  // Cierra la vista cuando se presiona.
             }
-            .foregroundColor(.purple)  // Color del texto del botón de cierre.
+            .foregroundColor(Color.customText)  // Color del texto del botón de cierre.
             .padding(.bottom)  // Espaciado inferior.
         }
-        .background(Color.white)  // Fondo blanco para toda la vista.
+        .background(Color.customBackground)  // Fondo blanco para toda la vista.
         .cornerRadius(20)  // Bordes redondeados para la vista.
         .padding()  // Espaciado exterior para alejar de los bordes de la pantalla.
     }

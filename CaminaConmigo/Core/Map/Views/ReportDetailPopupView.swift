@@ -21,10 +21,93 @@ struct ReportHeaderView: View {
     }
     
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        let seconds = -date.timeIntervalSinceNow
+        
+        let minute = 60.0
+        let hour = minute * 60
+        let day = hour * 24
+        let week = day * 7
+        let month = day * 30
+        let year = day * 365
+        
+        switch seconds {
+        case 0..<minute:
+            return "hace un momento"
+        case minute..<hour:
+            let minutes = Int(seconds/minute)
+            return "hace \(minutes) \(minutes == 1 ? "minuto" : "minutos")"
+        case hour..<day:
+            let hours = Int(seconds/hour)
+            return "hace \(hours) \(hours == 1 ? "hora" : "horas")"
+        case day..<week:
+            let days = Int(seconds/day)
+            return "hace \(days) \(days == 1 ? "día" : "días")"
+        case week..<month:
+            let weeks = Int(seconds/week)
+            return "hace \(weeks) \(weeks == 1 ? "semana" : "semanas")"
+        case month..<year:
+            let months = Int(seconds/month)
+            return "hace \(months) \(months == 1 ? "mes" : "meses")"
+        default:
+            let years = Int(seconds/year)
+            return "hace \(years) \(years == 1 ? "año" : "años")"
+        }
+    }
+}
+
+// Vista para imagen en pantalla completa
+struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: String
+}
+
+struct FullScreenImageView: View {
+    let imageUrl: String
+    @Environment(\.dismiss) var dismiss
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @GestureState private var magnifyBy = CGFloat(1.0)
+    
+    var body: some View {
+        GeometryReader { geometry in
+            AsyncImage(url: URL(string: imageUrl)) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .scaleEffect(scale * magnifyBy)
+                        .gesture(
+                            MagnificationGesture()
+                                .updating($magnifyBy) { currentState, gestureState, _ in
+                                    gestureState = currentState
+                                }
+                                .onEnded { value in
+                                    scale *= value
+                                    scale = min(max(scale, 1), 4)
+                                }
+                        )
+                case .failure(_):
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.red)
+                @unknown default:
+                    EmptyView()
+                }
+            }
+        }
+        .edgesIgnoringSafeArea(.all)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Cerrar") {
+                    dismiss()
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }
 
@@ -33,7 +116,8 @@ struct CarouselView: View {
     let report: ReportAnnotation
     let region: MKCoordinateRegion
     @Binding var currentImageIndex: Int
-    let demoImages: [String]
+    @State private var selectedImageUrl: IdentifiableURL?
+    @State private var showFullScreenImage = false
     
     var body: some View {
         VStack {
@@ -44,31 +128,54 @@ struct CarouselView: View {
                 .frame(height: 200)
                 .tag(0)
                 
-                ForEach(0..<demoImages.count, id: \.self) { index in
-                    Image(demoImages[index])
-                        .resizable()
-                        .scaledToFill()
+                if !report.report.imageUrls.isEmpty {
+                    ForEach(Array(report.report.imageUrls.enumerated()), id: \.element) { index, url in
+                        AsyncImage(url: URL(string: url)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .onTapGesture {
+                                        selectedImageUrl = IdentifiableURL(url: url)
+                                    }
+                            case .failure(_):
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.red)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
                         .frame(height: 200)
                         .clipped()
                         .tag(index + 1)
+                    }
                 }
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never)) // Oculta el indicador de página del TabView
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .frame(height: 200)
 
             // Indicadores de página manualmente interactivos
-            HStack {
-                ForEach(0..<demoImages.count + 1, id: \.self) { index in
-                    Circle()
-                        .fill(index == currentImageIndex ? Color.blue : Color.gray)
-                        .frame(width: 8, height: 8)
-                        .onTapGesture {
-                            // Cambia el índice actual al que se ha tocado
-                            currentImageIndex = index
-                        }
+            if !report.report.imageUrls.isEmpty {
+                HStack {
+                    ForEach(0..<(report.report.imageUrls.count + 1), id: \.self) { index in
+                        Circle()
+                            .fill(index == currentImageIndex ? Color.blue : Color.gray)
+                            .frame(width: 8, height: 8)
+                            .onTapGesture {
+                                currentImageIndex = index
+                            }
+                    }
                 }
+                .padding(.top, 8)
             }
-            .padding(.top, 8) // Espaciado entre el TabView y el indicador
+        }
+        .fullScreenCover(item: $selectedImageUrl) { identifiableUrl in
+            NavigationView {
+                FullScreenImageView(imageUrl: identifiableUrl.url)
+            }
         }
     }
 }
@@ -145,6 +252,13 @@ struct CommentsSection: View {
     }
 }
 
+// Añadir esta extensión al final del archivo
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
 struct ReportDetailPopupView: View {
     let report: ReportAnnotation
     @Environment(\.dismiss) var dismiss
@@ -158,8 +272,7 @@ struct ReportDetailPopupView: View {
     @State private var showLoginAlert = false
     @State private var navigateToLogin = false
     @State private var likesCount: Int = 0
-    
-    let demoImages = ["demo_image1", "demo_image2"]
+    @State private var authorUsername: String?
     
     init(report: ReportAnnotation, viewModel: ReportViewModel) {
         self.report = report
@@ -170,40 +283,91 @@ struct ReportDetailPopupView: View {
         ))
     }
     
+    private var currentUserId: String? {
+        authViewModel.userSession?.uid
+    }
+    
+    private var reportId: String? {
+        report.report.id
+    }
+    
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    ReportHeaderView(report: report)
-                    
-                    CarouselView(
-                        report: report,
-                        region: region,
-                        currentImageIndex: $currentImageIndex,
-                        demoImages: demoImages
-                    )
-                    
-                    Text(report.report.description)
-                        .font(.body)
-                    
-                    InteractionButtonsView(
-                        liked: $liked,
-                        onShare: shareReport,
-                        onLike: handleLike,
-                        likesCount: likesCount
-                    )
-                    
-                    Divider()
-                    
-                    CommentsSection(
-                        viewModel: viewModel,
-                        currentUserId: authViewModel.userSession?.uid,
-                        reportId: report.report.id,
-                        comment: $comment,
-                        onAddComment: addComment
-                    )
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ReportHeaderView(report: report)
+
+                        if !report.report.isAnonymous, let username = authorUsername {
+                            HStack {
+                                Text("Reportado por: \(username)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.horizontal)
+                        }
+
+                        CarouselView(
+                            report: report,
+                            region: region,
+                            currentImageIndex: $currentImageIndex
+                        )
+                        
+                        Text(report.report.description)
+                            .font(.body)
+                        
+                        InteractionButtonsView(
+                            liked: $liked,
+                            onShare: shareReport,
+                            onLike: handleLike,
+                            likesCount: likesCount
+                        )
+                        
+                        Divider()
+                        
+                        // Mostramos los comentarios aquí, pero no el campo de entrada
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Comentarios")
+                                .font(.headline)
+                            
+                            if viewModel.isLoadingComments {
+                                ProgressView()
+                            } else {
+                                ForEach(viewModel.comments) { comment in
+                                    CommentView(
+                                        comment: comment,
+                                        currentUserId: currentUserId,
+                                        onDelete: {
+                                            if let reportId = reportId {
+                                                viewModel.deleteComment(commentId: comment.id ?? "", reportId: reportId)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    .padding()
                 }
-                .padding()
+                .onTapGesture {
+                    hideKeyboard()
+                }
+
+                // Campo de entrada de comentarios
+                if currentUserId != nil {
+                    HStack {
+                        TextField("Añadir un comentario...", text: $comment)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        
+                        Button(action: addComment) {
+                            Text("Enviar")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemBackground))
+                    .shadow(radius: 2)
+                }
             }
             .navigationTitle("Detalles del Reporte")
             .navigationBarTitleDisplayMode(.inline)
@@ -224,6 +388,14 @@ struct ReportDetailPopupView: View {
                             liked = isLiked
                         }
                     }
+                    
+                    // Fetch author username if report is not anonymous
+                    if !report.report.isAnonymous {
+                        viewModel.fetchAuthorUsername(userId: report.report.userId) { username in
+                        print("Fetched username: \(username ?? "nil")") // Depuración
+                            authorUsername = username
+                        }
+                    }
                 }
             }
             .alert("Iniciar Sesión", isPresented: $showLoginAlert) {
@@ -237,6 +409,9 @@ struct ReportDetailPopupView: View {
             .fullScreenCover(isPresented: $navigateToLogin) {
                 LoginView()
             }
+        }
+        .onTapGesture {
+            hideKeyboard()
         }
     }
     
@@ -350,8 +525,36 @@ struct CommentView: View {
     }
     
     private func formatCommentDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+        let seconds = -date.timeIntervalSinceNow
+        
+        let minute = 60.0
+        let hour = minute * 60
+        let day = hour * 24
+        let week = day * 7
+        let month = day * 30
+        let year = day * 365
+        
+        switch seconds {
+        case 0..<minute:
+            return "hace un momento"
+        case minute..<hour:
+            let minutes = Int(seconds/minute)
+            return "hace \(minutes) \(minutes == 1 ? "minuto" : "minutos")"
+        case hour..<day:
+            let hours = Int(seconds/hour)
+            return "hace \(hours) \(hours == 1 ? "hora" : "horas")"
+        case day..<week:
+            let days = Int(seconds/day)
+            return "hace \(days) \(days == 1 ? "día" : "días")"
+        case week..<month:
+            let weeks = Int(seconds/week)
+            return "hace \(weeks) \(weeks == 1 ? "semana" : "semanas")"
+        case month..<year:
+            let months = Int(seconds/month)
+            return "hace \(months) \(months == 1 ? "mes" : "meses")"
+        default:
+            let years = Int(seconds/year)
+            return "hace \(years) \(years == 1 ? "año" : "años")"
+        }
     }
 } 

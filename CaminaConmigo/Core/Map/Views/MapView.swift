@@ -21,6 +21,11 @@ struct MapView: View {
     @State private var selectedReport: ReportAnnotation?
     @State private var showEmergencyCall = false
     @State private var showReportDetail = false  // Nuevo estado para controlar la presentación
+    @AppStorage("shakeEnabled") private var shakeEnabled = true  // Agregar esta línea
+    
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
 
     var body: some View {
         ZStack {
@@ -29,12 +34,22 @@ struct MapView: View {
                 locationManager: locationManager,
                 centerCoordinate: $centerCoordinate,
                 viewModel: reportViewModel,
-                selectedReport: $selectedReport
+                selectedReport: $selectedReport,
+                searchLocation: $viewModel.searchLocation
             )
             .ignoresSafeArea()  // Ignora las áreas seguras del dispositivo (por ejemplo, las muescas en pantallas).
             .onChange(of: selectedReport) { newValue in
                 if newValue != nil {
                     showReportDetail = true
+                }
+            }
+            .onTapGesture {
+                hideKeyboard()
+                viewModel.clearSearch()
+            }
+            .onChange(of: viewModel.isSearchActive) { isActive in
+                if !isActive {
+                    searchText = ""
                 }
             }
 
@@ -53,12 +68,44 @@ struct MapView: View {
                             .padding(.leading, 8)
                         
                         TextField("Buscar ubicación...", text: $searchText)  // Campo de texto para la búsqueda.
+                            .onChange(of: searchText) { newValue in
+                                viewModel.searchAddress(newValue)
+                            }
                     }
                     .padding(8)
                     .background(.ultraThinMaterial.opacity(0.6))  // Fondo con material translúcido.
                     .cornerRadius(30)
                 }
                 .padding()
+                
+                // Resultados de búsqueda
+                if !viewModel.searchResults.isEmpty && !searchText.isEmpty {
+                    ScrollView {
+                        VStack(alignment: .leading) {
+                            ForEach(viewModel.searchResults, id: \.self) { result in
+                                Button(action: {
+                                    viewModel.selectSearchResult(result)
+                                    hideKeyboard()
+                                }) {
+                                    VStack(alignment: .leading) {
+                                        Text(result.title)
+                                            .foregroundColor(.primary)
+                                        Text(result.subtitle)
+                                            .foregroundColor(.gray)
+                                            .font(.caption)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                                Divider()
+                            }
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                    }
+                    .frame(maxHeight: 200)
+                }
                 
                 Spacer()  // Espaciado para separar la barra superior del resto de la interfaz.
 
@@ -144,9 +191,21 @@ struct MapView: View {
                 ReportDetailPopupView(report: report, viewModel: reportViewModel)
             }
         }
+        .onChange(of: shakeEnabled) { newValue in
+            if newValue {
+                shakeDetector.restartMonitoring()
+            } else {
+                shakeDetector.stopMonitoring()
+            }
+        }
         .onAppear {
+            if shakeEnabled {
+                shakeDetector.restartMonitoring()
+            }
             shakeDetector.onShakeDetected = {
-                showEmergencyCall = true
+                if shakeEnabled {
+                    showEmergencyCall = true
+                }
             }
         }
         .onDisappear {

@@ -17,8 +17,8 @@ struct Report: Identifiable, Codable {
     var type: ReportType
     var description: String
     var coordinate: CLLocationCoordinate2D?
-    var isAnonymous: Bool = true
-    var images: [UIImage] = []
+    var isAnonymous: Bool 
+    var imageUrls: [String] = []  // Array de URLs de imágenes
     var timestamp: Date
     var likes: Int = 0
     var userId: String
@@ -30,6 +30,7 @@ struct Report: Identifiable, Codable {
         case latitude
         case longitude
         case isAnonymous
+        case imageUrls
         case timestamp
         case likes
         case userId

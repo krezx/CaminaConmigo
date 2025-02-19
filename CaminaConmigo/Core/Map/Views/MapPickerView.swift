@@ -11,10 +11,42 @@ import MapKit
 
 struct MapPickerView: View {
     @Binding var selectedLocation: CLLocationCoordinate2D?
+    @Binding var selectedAddress: String
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: ReportViewModel
     @StateObject private var locationManager = LocationManager()
     @State private var centerCoordinate: CLLocationCoordinate2D?
+    @State private var isGettingAddress = false
+    @State private var searchLocation: CLLocationCoordinate2D?
+    
+    func getAddressFromCoordinate(_ coordinate: CLLocationCoordinate2D) {
+        isGettingAddress = true
+        let geocoder = CLGeocoder()
+        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        
+        geocoder.reverseGeocodeLocation(location) { placemarks, error in
+            if let error = error {
+                print("Error en geocodificación: \(error.localizedDescription)")
+                selectedAddress = "Ubicación seleccionada"
+                isGettingAddress = false
+                return
+            }
+            
+            if let placemark = placemarks?.first {
+                let thoroughfare = placemark.thoroughfare ?? ""
+                let subThoroughfare = placemark.subThoroughfare ?? ""
+                let locality = placemark.locality ?? ""
+                
+                selectedAddress = "\(thoroughfare) \(subThoroughfare), \(locality)".trimmingCharacters(in: .whitespaces)
+                if selectedAddress.isEmpty {
+                    selectedAddress = "Ubicación seleccionada"
+                }
+            } else {
+                selectedAddress = "Ubicación seleccionada"
+            }
+            isGettingAddress = false
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -22,29 +54,38 @@ struct MapPickerView: View {
                 locationManager: locationManager,
                 centerCoordinate: $centerCoordinate,
                 viewModel: viewModel,
-                selectedReport: .constant(nil)
+                selectedReport: .constant(nil),
+                searchLocation: $searchLocation
             )
             VStack {
-               Spacer()  // Empuja el mappin hacia el centro
-               Image(systemName: "mappin")
-                   .font(.system(size: 50))  // Puedes ajustar el tamaño del mappin
-                   .foregroundColor(.red)   // Cambia el color si lo deseas
-               Spacer()  // Mantiene el mappin centrado verticalmente
-               Button("Seleccionar esta ubicación") {
-                   if let coordinate = centerCoordinate {
-                       viewModel.selectedLocation = coordinate
-                       // Actualizamos directamente las coordenadas del reporte
-                       viewModel.currentReport?.coordinate = coordinate
-                   }
-                   dismiss()
-               }
-               .padding()
-               .background(Color.blue)
-               .foregroundColor(.white)
-               .cornerRadius(8)
-               .padding(.bottom)  // Agrega un espacio desde el borde inferior
-           }
-           .frame(maxHeight: .infinity)  // Asegura que la VStack ocupe todo el espacio vertical
+                Spacer()
+                Image(systemName: "mappin")
+                    .font(.system(size: 50))
+                    .foregroundColor(.red)
+                Spacer()
+                Button {
+                    if let coordinate = centerCoordinate {
+                        viewModel.selectedLocation = coordinate
+                        viewModel.currentReport?.coordinate = coordinate
+                        getAddressFromCoordinate(coordinate)
+                        dismiss()
+                    }
+                } label: {
+                    HStack {
+                        if isGettingAddress {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                        Text("Seleccionar esta ubicación")
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                .padding(.bottom)
+            }
+            .frame(maxHeight: .infinity)
         }
     }
 }

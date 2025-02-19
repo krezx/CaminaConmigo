@@ -27,7 +27,7 @@ struct NotificationsView: View {
                     dismiss()
                 }) {
                     Image(systemName: "arrow.left")
-                        .foregroundColor(.black)
+                        .foregroundColor(Color.customText)
                         .font(.title2)
                 }
                 Spacer()
@@ -38,7 +38,7 @@ struct NotificationsView: View {
                 Spacer()
             }
             .padding(.horizontal)
-            .background(Color.white)
+            .background(Color.customBackground)
             .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
             
             ScrollView {
@@ -183,7 +183,8 @@ struct NotificationRow: View {
                     lastMessage: "",
                     timeString: "",
                     lastMessageTimestamp: Date(),
-                    adminIds: []
+                    adminIds: [],
+                    participantPhotos: [:]
                 ))
             } else {
                 EmptyView()

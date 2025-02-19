@@ -22,6 +22,11 @@ class ReportViewModel: ObservableObject {
     @Published var isLoadingComments = false
     @Published var filteredReports: [ReportAnnotation] = []
     @Published var selectedFilter: String = "Tendencias"
+    @Published var selectedAddress: String = "Seleccionar ubicación"
+    @Published var isLoadingCity = false
+    @Published var searchText = ""
+    @Published var isSearching = false
+    @Published var searchResults: [ReportAnnotation] = []
 
     private let db = Firestore.firestore()
     private let storage = Storage.storage()
@@ -67,16 +72,20 @@ class ReportViewModel: ObservableObject {
                 }
                 
                 let likes = data["likes"] as? Int ?? 0
+                let isAnonymous = data["isAnonymous"] as? Bool ?? false
+                let imageUrls = data["imageUrls"] as? [String] ?? []
                 
-                let report = Report(
+                var report = Report(
                     id: document.documentID,
                     type: type,
                     description: description,
                     coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                    isAnonymous: isAnonymous,
                     likes: likes,
                     timestamp: timestamp.dateValue(),
                     userId: userId
                 )
+                report.imageUrls = imageUrls
                 
                 return ReportAnnotation(report: report)
             }
@@ -100,15 +109,14 @@ class ReportViewModel: ObservableObject {
     }
     
     /// Envía el reporte al servidor o sistema de backend.
-    func submitReport(image: UIImage?) {
+    func submitReport(images: [UIImage]) {
         guard let report = currentReport else { return }
         guard let coordinate = selectedLocation else { return }
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
-
-        // Actualizar las coordenadas del reporte actual
+        
         currentReport?.coordinate = coordinate
-
-        let reportData: [String: Any] = [
+        
+        var reportData: [String: Any] = [
             "type": report.type.title,
             "description": report.description,
             "isAnonymous": report.isAnonymous,
@@ -116,49 +124,59 @@ class ReportViewModel: ObservableObject {
             "latitude": coordinate.latitude,
             "longitude": coordinate.longitude,
             "likes": 0,
-            "userId": currentUserId
+            "userId": currentUserId,
+            "imageUrls": []
         ]
-
-        if let image = image {
-            uploadImage(image) { url in
-                var data = reportData
-                data["imageUrl"] = url?.absoluteString ?? ""
-                self.saveReportData(data) { reportId in
-                    if !report.isAnonymous {
-                        self.notifyFriends(reportId: reportId, report: report)
-                    }
-                }
-            }
-        } else {
+        
+        if images.isEmpty {
             saveReportData(reportData) { reportId in
                 if !report.isAnonymous {
                     self.notifyFriends(reportId: reportId, report: report)
                 }
             }
+        } else {
+            uploadImages(images) { urls in
+                reportData["imageUrls"] = urls
+                self.saveReportData(reportData) { reportId in
+                    if !report.isAnonymous {
+                        self.notifyFriends(reportId: reportId, report: report)
+                    }
+                }
+            }
         }
     }
-
-    private func uploadImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            completion(nil)
-            return
-        }
+    
+    private func uploadImages(_ images: [UIImage], completion: @escaping ([String]) -> Void) {
+        let group = DispatchGroup()
+        var urls: [String] = []
         
-        let storageRef = storage.reference().child("report_images/\(UUID().uuidString).jpg")
-        storageRef.putData(imageData, metadata: nil) { _, error in
-            if let error = error {
-                print("Error uploading image: \(error.localizedDescription)")
-                completion(nil)
-                return
+        for image in images {
+            group.enter()
+            
+            guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                group.leave()
+                continue
             }
-            storageRef.downloadURL { url, error in
+            
+            let storageRef = storage.reference().child("report_images/\(UUID().uuidString).jpg")
+            storageRef.putData(imageData, metadata: nil) { _, error in
                 if let error = error {
-                    print("Error getting download URL: \(error.localizedDescription)")
-                    completion(nil)
+                    print("Error uploading image: \(error.localizedDescription)")
+                    group.leave()
                     return
                 }
-                completion(url)
+                
+                storageRef.downloadURL { url, error in
+                    if let url = url {
+                        urls.append(url.absoluteString)
+                    }
+                    group.leave()
+                }
             }
+        }
+        
+        group.notify(queue: .main) {
+            completion(urls)
         }
     }
 
@@ -188,31 +206,38 @@ class ReportViewModel: ObservableObject {
                 .getDocuments { snapshot, error in
                     guard let documents = snapshot?.documents else { return }
                     
-                    // Para cada amigo, crear una notificación
+                    // Para cada amigo, verificar sus preferencias de notificación
                     for doc in documents {
                         let friendId = doc.documentID
                         
-                        let notification = UserNotification(
-                            userId: friendId,
-                            type: .friendReport,
-                            title: "Nuevo reporte de amigo",
-                            message: "\(username) ha reportado un incidente de \(report.type.title)",
-                            createdAt: Date(),
-                            isRead: false,
-                            data: [
-                                "reportId": reportId,
-                                "reportType": report.type.title,
-                                "friendId": currentUserId,
-                                "friendName": username
-                            ]
-                        )
-                        
-                        // Guardar la notificación en Firestore
-                        try? self.db.collection("users")
-                            .document(friendId)
-                            .collection("notifications")
-                            .document()
-                            .setData(from: notification)
+                        // Verificar si el amigo tiene activadas las notificaciones de reportes
+                        self.db.collection("users").document(friendId).getDocument { friendSnapshot, error in
+                            guard let friendData = friendSnapshot?.data(),
+                                let reportNotificationsEnabled = friendData["reportNotifications"] as? Bool,
+                                reportNotificationsEnabled else { return }
+                            
+                            let notification = UserNotification(
+                                userId: friendId,
+                                type: .friendReport,
+                                title: "Nuevo reporte de amigo",
+                                message: "\(username) ha reportado un incidente de \(report.type.title)",
+                                createdAt: Date(),
+                                isRead: false,
+                                data: [
+                                    "reportId": reportId,
+                                    "reportType": report.type.title,
+                                    "friendId": currentUserId,
+                                    "friendName": username
+                                ]
+                            )
+                            
+                            // Guardar la notificación en Firestore solo si las notificaciones están activadas
+                            try? self.db.collection("users")
+                                .document(friendId)
+                                .collection("notifications")
+                                .document()
+                                .setData(from: notification)
+                        }
                     }
                 }
         }
@@ -411,14 +436,64 @@ class ReportViewModel: ObservableObject {
     func filterReports(by filter: String) {
         switch filter {
         case "Tendencias":
+            // Ordenar por número de likes
             filteredReports = reports.sorted { $0.report.likes > $1.report.likes }
         case "Recientes":
+            // Ordenar por fecha más reciente
             filteredReports = reports.sorted { $0.report.timestamp > $1.report.timestamp }
         case "Ciudad":
-            filteredReports = reports // Por ahora mostramos todos, podríamos filtrar por ciudad si agregamos esa información
+            isLoadingCity = true
+            Task {
+                await groupReportsByCity()
+                await MainActor.run {
+                    isLoadingCity = false
+                }
+            }
         default:
             filteredReports = reports
         }
+    }
+
+    @MainActor
+    private func groupReportsByCity() async {
+        let geocoder = CLGeocoder()
+        var reportsWithCity: [(report: ReportAnnotation, city: String)] = []
+        
+        // Obtener la ciudad actual del usuario para ordenar primero los reportes de su ciudad
+        let currentLocation = FilterLocationManager.shared.getCurrentLocation()
+        var userCity = "ZZZ" // Valor por defecto para ordenar al final si no se encuentra la ciudad
+        
+        if let currentLocation = currentLocation {
+            if let placemark = try? await geocoder.reverseGeocodeLocation(CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)).first,
+               let city = placemark.locality {
+                userCity = city
+            }
+        }
+        
+        // Procesar cada reporte para obtener su ciudad
+        for report in reports {
+            let location = CLLocation(latitude: report.coordinate.latitude, longitude: report.coordinate.longitude)
+            if let placemark = try? await geocoder.reverseGeocodeLocation(location).first,
+               let city = placemark.locality {
+                reportsWithCity.append((report: report, city: city))
+            }
+        }
+        
+        // Ordenar primero por ciudad (la ciudad del usuario primero) y luego por fecha
+        filteredReports = reportsWithCity
+            .sorted { (report1, report2) -> Bool in
+                if report1.city == userCity && report2.city != userCity {
+                    return true
+                }
+                if report2.city == userCity && report1.city != userCity {
+                    return false
+                }
+                if report1.city == report2.city {
+                    return report1.report.report.timestamp > report2.report.report.timestamp
+                }
+                return report1.city < report2.city
+            }
+            .map { $0.report }
     }
 
     /// Obtiene el número de comentarios de un reporte
@@ -456,18 +531,58 @@ class ReportViewModel: ObservableObject {
             }
             
             let likes = data["likes"] as? Int ?? 0
+            let isAnonymous = data["isAnonymous"] as? Bool ?? true
+            let imageUrls = data["imageUrls"] as? [String] ?? []
             
-            let report = Report(
+            var report = Report(
                 id: document.documentID,
                 type: type,
                 description: description,
                 coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                isAnonymous: isAnonymous,
                 likes: likes,
                 timestamp: timestamp.dateValue(),
                 userId: userId
             )
+            report.imageUrls = imageUrls
             
             completion(report)
+        }
+    }
+
+    /// Obtiene el nombre de usuario del autor del reporte
+    func fetchAuthorUsername(userId: String, completion: @escaping (String?) -> Void) {
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("Error fetching author username: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            if let data = snapshot?.data(),
+               let username = data["username"] as? String {
+                completion(username)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+
+    func searchReports(query: String) {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+        
+        let queryLowercased = query.lowercased()
+        searchResults = reports.filter { report in
+            // Primero busca en el tipo de reporte
+            let typeMatch = report.report.type.title.lowercased().contains(queryLowercased)
+            
+            // Luego busca en la descripción
+            let descriptionMatch = report.report.description.lowercased().contains(queryLowercased)
+            
+            return typeMatch || descriptionMatch
         }
     }
 }

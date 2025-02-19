@@ -6,17 +6,19 @@
 //
 
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 /// Vista que permite a los usuarios configurar las preferencias de la aplicación,
 /// como notificaciones, modo oscuro y la activación del shake para interacciones rápidas.
 struct ConfigView: View {
     @Environment(\.dismiss) private var dismiss  // Permite cerrar la vista.
+    @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Propiedades de estado para manejar las configuraciones de usuario.
     @State private var groupNotifications = true  // Activar/desactivar notificaciones de grupos.
-    @State private var reportNotifications = false  // Activar/desactivar notificaciones de reportes.
-    @State private var darkMode = false  // Activar/desactivar el modo oscuro.
-    @State private var shakeEnabled = true  // Activar/desactivar la funcionalidad de shake.
+    @AppStorage("reportNotifications") private var reportNotifications = true  // Cambiamos el @State por @AppStorage
+    @AppStorage("shakeEnabled") private var shakeEnabled = true  // Activar/desactivar la funcionalidad de shake.
     
     var body: some View {
         NavigationView {
@@ -27,9 +29,10 @@ struct ConfigView: View {
                         dismiss()  // Cierra la vista de configuración.
                     }) {
                         Image(systemName: "arrow.left")  // Icono de flecha para regresar.
-                            .foregroundColor(.black)
+                            .foregroundColor(Color.customText)
                             .font(.title2)
                     }
+                    .padding(.leading)
                     
                     Spacer()
                     
@@ -56,12 +59,21 @@ struct ConfigView: View {
                         .font(.title2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 5)
+                        .onChange(of: reportNotifications) { newValue in
+                            guard let userId = Auth.auth().currentUser?.uid else { return }
+                            Firestore.firestore().collection("users")
+                                .document(userId)
+                                .setData(["reportNotifications": newValue], merge: true)
+                        }
 
                     // Toggle para habilitar el modo oscuro.
-                    Toggle("Modo oscuro", isOn: $darkMode)
+                    Toggle("Modo oscuro", isOn: $isDarkMode)
                         .font(.title2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 5)
+                        .onChange(of: isDarkMode) { _ in
+                            // No es necesario hacer nada aquí, el @AppStorage se encarga automáticamente
+                        }
 
                     // Toggle para habilitar el comportamiento de shake.
                     Toggle("Shake", isOn: $shakeEnabled)
@@ -78,7 +90,3 @@ struct ConfigView: View {
     }
 }
 
-/// Vista previa para previsualizar la vista de configuración en el canvas de Xcode.
-#Preview {
-    ConfigView()  // Previsualización de la vista de configuración.
-}

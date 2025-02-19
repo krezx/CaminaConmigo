@@ -7,16 +7,20 @@
 
 
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showEditName = false
     @State private var showEditUsername = false
+    @State private var showProfileTypeSelector = false
     @State private var showImagePicker = false
     @State private var selectedImage: UIImage?
     @State private var tempName: String = ""
     @State private var tempUsername: String = ""
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var showImageOptions = false
     
     var body: some View {
         NavigationView {
@@ -27,10 +31,10 @@ struct ProfileView: View {
                         dismiss()
                     }) {
                         Image(systemName: "arrow.left")
-                            .foregroundColor(.black)
+                            .foregroundColor(Color.customText)
                             .font(.title2)
                     }
-                    .padding([.top, .leading], 20)
+                    .padding([.top, .leading])
                     
                     Spacer()
                 }
@@ -41,36 +45,53 @@ struct ProfileView: View {
                 } else {
                     // Foto de perfil
                     VStack {
-                        Button(action: {
-                            showImagePicker = true
-                        }) {
-                            if let selectedImage = selectedImage {
-                                Image(uiImage: selectedImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 150, height: 150)
-                                    .clipShape(Circle())
-                            } else if let photoURL = viewModel.userProfile?.photoURL,
-                                    let url = URL(string: photoURL) {
-                                AsyncImage(url: url) { image in
-                                    image
+                        PhotosPicker(selection: $selectedItem,
+                                    matching: .images) {
+                            VStack {
+                                if let selectedImage = selectedImage {
+                                    Image(uiImage: selectedImage)
                                         .resizable()
                                         .scaledToFill()
                                         .frame(width: 150, height: 150)
                                         .clipShape(Circle())
-                                } placeholder: {
-                                    ProgressView()
+                                } else if let photoURL = viewModel.userProfile?.photoURL,
+                                        let url = URL(string: photoURL) {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 150, height: 150)
+                                            .clipShape(Circle())
+                                    } placeholder: {
+                                        ProgressView()
+                                            .frame(width: 150, height: 150)
+                                    }
+                                } else {
+                                    Image(systemName: "person.circle")
+                                        .resizable()
+                                        .scaledToFit()
                                         .frame(width: 150, height: 150)
+                                        .foregroundColor(Color.customText)
                                 }
-                            } else {
-                                Image(systemName: "person.circle")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 150, height: 150)
-                                    .foregroundColor(.gray)
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                viewModel.removeProfilePhoto()
+                                selectedImage = nil
+                            } label: {
+                                Label("Eliminar foto", systemImage: "trash")
+                            }
+                        }
+                        .onChange(of: selectedItem) { newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    selectedImage = image
+                                    viewModel.uploadProfileImage(image)
+                                }
+                            }
+                        }
                         
                         Button(action: {
                             showImagePicker = true
@@ -106,10 +127,14 @@ struct ProfileView: View {
                             )
                         }
                         
-                        ProfileOption(
-                            title: "Tipo de perfil",
-                            value: viewModel.userProfile?.profileType ?? "Público"
-                        )
+                        Button(action: {
+                            showProfileTypeSelector = true
+                        }) {
+                            ProfileOption(
+                                title: "Tipo de perfil",
+                                value: viewModel.userProfile?.profileType ?? "Público"
+                            )
+                        }
                     }
                     .padding(.top, 20)
                     
@@ -117,10 +142,10 @@ struct ProfileView: View {
                     if let joinDate = viewModel.userProfile?.joinDate {
                         HStack {
                             Image(systemName: "calendar")
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.customText)
                             Text("Miembro desde \(joinDate.formatted(.dateTime.month().year()))")
                                 .font(.footnote)
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.customText)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 10)
@@ -130,13 +155,16 @@ struct ProfileView: View {
                 }
             }
             .padding(.horizontal)
-            .sheet(isPresented: $showImagePicker) {
-                ImagePicker(image: $selectedImage)
-                    .onChange(of: selectedImage) { newImage in
-                        if let image = newImage {
-                            viewModel.uploadProfileImage(image)
-                        }
-                    }
+            .confirmationDialog("Seleccionar tipo de perfil",
+                              isPresented: $showProfileTypeSelector,
+                              titleVisibility: .visible) {
+                Button("Público") {
+                    viewModel.updateProfileType("Público")
+                }
+                Button("Privado") {
+                    viewModel.updateProfileType("Privado")
+                }
+                Button("Cancelar", role: .cancel) {}
             }
             .alert("Editar nombre", isPresented: $showEditName) {
                 TextField("Nombre", text: $tempName)
@@ -181,24 +209,18 @@ struct ProfileOption: View {
             VStack(alignment: .leading) {
                 Text(title)
                     .font(.title3)
-                    .foregroundColor(.black)
+                    .foregroundColor(Color.customText)
                 Text(value)
                     .font(.title3)
-                    .foregroundColor(.gray)
+                    .foregroundColor(Color.customText.opacity(0.8))
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
+                .foregroundColor(Color.customText)
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(Color.customBackground)
         .cornerRadius(10)
         .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
-    }
-}
-
-struct ProfileView_Previews: PreviewProvider {
-    static var previews: some View {
-        ProfileView()
     }
 }
